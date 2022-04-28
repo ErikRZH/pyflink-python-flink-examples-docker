@@ -1,0 +1,2 @@
+To see the contents of elastic search check
+http://localhost:1236/platform_demo_1/_search?pretty or http://localhost:9200/platform_demo_1/_search?pretty
