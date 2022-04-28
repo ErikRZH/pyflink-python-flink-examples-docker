@@ -32,7 +32,7 @@ def teams_id_to_name(id):
 def log_processing():
     env = StreamExecutionEnvironment.get_execution_environment()
     t_env = StreamTableEnvironment.create(stream_execution_environment=env)
-    t_env.get_config().get_configuration().set_string("pipeline.name", "Extended Demo Pipeline")
+    t_env.get_config().get_configuration().set_string("pipeline.name", "Extended Pipeline: modified-playground")
     t_env.get_config().get_configuration().set_boolean("python.fn-execution.memory.managed", True)
 
     create_kafka_source_ddl = """
