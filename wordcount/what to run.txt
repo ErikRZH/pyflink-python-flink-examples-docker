@@ -1,0 +1,26 @@
+From https://wicaksonodiaz.medium.com/setup-pyflink-development-environment-76d8491a9ad7
+and 
+https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/deployment/resource-providers/standalone/docker/#app-cluster-yml
+
+RUN
+docker pull flink:1.14.4-scala_2.11
+docker build --tag pyflink:1.14.4-scala_2.11 .
+#OPTIONAL docker images
+docker compose up -d
+
+TO RUN WORDCOUNT (DOES NOT DETATCH)
+
+docker-compose exec -d jobmanager ./bin/flink run --detached --python /opt/pyflink-naive/examples/word_count.py
+AND/OR
+docker-compose exec -d jobmanager ./bin/flink run --detached --python /opt/pyflink-naive/examples/word_count_ds.py
+
+TEST:
+docker-compose exec jobmanager ./bin/flink run --detached -py /opt/pyflink-naive/examples/word_count_ds.py -d
+
+from
+docker-compose exec jobmanager ./bin/flink run -py /opt/pyflink-walkthrough/payment_msg_proccessing.py -d
+and
+./bin/flink run --python ../../word_count.py
+
+TO SEE INSIDE CONTAINER:
+docker exec -it naivepyflink_jobmanager_1 bash
