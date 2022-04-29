@@ -66,7 +66,7 @@ class CountRunLength(FlatMapFunction):
         elif seen_int == current_run[0]:
             current_run = (seen_int, current_run[1] + 1)
             self.sum.update(current_run)
-            if max_lengths.get(seen_int) is None or current_run[1] >= max_lengths.get(seen_int):
+            if max_lengths.get(seen_int) is None or current_run[1] > max_lengths.get(seen_int):
                 max_lengths[seen_int] = current_run[1]
                 self.max_lengths.update(max_lengths)
                 yield Row(seen_time, seen_int, max_lengths[seen_int])
