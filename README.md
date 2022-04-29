@@ -15,8 +15,11 @@ This repository is intended to provide such further examples, **the repository m
 [(3)](stateful-pair-avg) Example of combining the table and datastream API's to implement the keyed state function from [here](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/dev/datastream/fault-tolerance/state/) is included.    
 **[Table API, Datastream API, Stateful Function, Kafka, Elasticsearch, Kibana]**
 
-(4) Furthermore, a different keyed state function, analysing random 1's and 0's generated and sent with kafka to record the longest run of consecutive 1's and 0's and when it occurs is included.        
+[(4)](stateful-longest-run) Furthermore, a different keyed state function, analyses random 1's and 0's generated and sent with kafka. The flink job records the longest run of consecutive 1's and 0's and when it occurs is included. A kibana dashboard displaying the results is also included.        
 **[Table API, Datastream API, Stateful Function, Kafka, Elasticsearch, Kibana]**
 
-(5) A process where integers are being generated and then analysed for their primality is also included.   
+*It may be wise to remove and rebuild the images build for (3) and (4) when switching between them.*
+<!---
+ (5) A process where integers are being generated and then analysed for their primality is also included.   
 **[Table API, Datastream API, Stateful Function, Parallel Execution, Kafka, Elasticsearch, Kibana]**
+-->
