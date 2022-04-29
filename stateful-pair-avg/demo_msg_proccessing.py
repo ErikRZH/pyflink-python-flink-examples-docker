@@ -20,7 +20,6 @@ from pyflink.common.typeinfo import Types
 from pyflink.datastream import StreamExecutionEnvironment, TimeCharacteristic, FlatMapFunction, RuntimeContext, MapFunction
 from pyflink.datastream.state import ValueStateDescriptor
 from pyflink.table import StreamTableEnvironment, DataTypes, EnvironmentSettings, Schema
-import logging
 
 class CountWindowAverage(FlatMapFunction):
 
@@ -36,7 +35,6 @@ class CountWindowAverage(FlatMapFunction):
 
     def flat_map(self, value):
         # access the state value
-        logging.warning("RUNNING FUNCTION")
         current_sum = self.sum.value() # Access the value of the state stored in self.sum
         if current_sum is None:
             current_sum = (0, 0) # Entries correspond to number of elements summed and the value of the sum respectively
