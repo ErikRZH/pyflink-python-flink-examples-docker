@@ -17,9 +17,11 @@
 ################################################################################
 from pyflink.common import WatermarkStrategy, Row
 from pyflink.common.typeinfo import Types
-from pyflink.datastream import StreamExecutionEnvironment, TimeCharacteristic, FlatMapFunction, RuntimeContext, MapFunction
+from pyflink.datastream import StreamExecutionEnvironment, TimeCharacteristic, FlatMapFunction, RuntimeContext, \
+    MapFunction
 from pyflink.datastream.state import ValueStateDescriptor, MapStateDescriptor
 from pyflink.table import StreamTableEnvironment, DataTypes, EnvironmentSettings, Schema
+
 
 class CountRunLength(FlatMapFunction):
     # Class used for identifying the longest consecutive run of integers in a datastream,
@@ -38,19 +40,19 @@ class CountRunLength(FlatMapFunction):
         )
         self.sum = runtime_context.get_state(descriptor)
 
-        # Dictionary to keep track of longest runs seen
+        # Dictionary to keep track of the longest runs seen
         descriptor_max = MapStateDescriptor(
             "runLength",  # the state name
-            Types.INT(), # Key type
+            Types.INT(),  # Key type
             Types.INT()  # Value type
         )
         self.max_lengths = runtime_context.get_state(descriptor_max)
 
     def flat_map(self, value):
         # access the state value
-        current_run = self.sum.value() # Access the value of the state stored in self.sum
+        current_run = self.sum.value()  # Access the value of the state stored in self.sum
         if current_run is None:
-            current_run = (-1, 0) # Entries correspond to (0) previous entry and (1) number of previous entries in run.
+            current_run = (-1, 0)  # Entries correspond to (0) previous entry and (1) number of previous entries in run.
 
         max_lengths = self.max_lengths.value()  # Access the value of the state stored in self.sum
         if max_lengths is None:
@@ -71,10 +73,12 @@ class CountRunLength(FlatMapFunction):
                 self.max_lengths.update(max_lengths)
                 yield Row(seen_time, seen_int, max_lengths[seen_int])
 
+
 def log_processing():
     env = StreamExecutionEnvironment.get_execution_environment()
     t_env = StreamTableEnvironment.create(stream_execution_environment=env)
-    t_env.get_config().get_configuration().set_string("pipeline.name", "Extended Pipeline: Average Pairs of Binary Numbers")
+    t_env.get_config().get_configuration().set_string("pipeline.name",
+                                                      "Extended Pipeline: Average Pairs of Binary Numbers")
     t_env.get_config().get_configuration().set_boolean("python.fn-execution.memory.managed", True)
 
     create_kafka_source_ddl = """
@@ -123,12 +127,12 @@ def log_processing():
 
     # Use Datastream API stateful function
     ds = ds.key_by(lambda row: 1) \
-            .flat_map(CountRunLength(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.INT()])) \
-
+        .flat_map(CountRunLength(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.INT()]))
     # Convert Datastream back to table
     table_out = t_env.from_data_stream(ds).alias("binaryInt")
     # Write to sink
     table_out.execute_insert("es_sink")
+
 
 if __name__ == '__main__':
     log_processing()
