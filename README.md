@@ -18,7 +18,7 @@ This repository is intended to provide such further examples, **the repository m
 [(4)](stateful-longest-run) Furthermore, a different keyed state function, analyses random 1's and 0's generated and sent with kafka. The flink job records the longest run of consecutive 1's and 0's and when it occurs is included. A kibana dashboard displaying the results is also included.        
 **[Table API, Datastream API, Stateful Function, Kafka, Elasticsearch, Kibana]**
 
-*It may be wise to remove and rebuild the images build for (3) and (4) when switching between them.*
+*It may be wise to remove and rebuild the images for (3) and (4) when switching between them.*
 <!---
  (5) A process where integers are being generated and then analysed for their primality is also included.   
 **[Table API, Datastream API, Stateful Function, Parallel Execution, Kafka, Elasticsearch, Kibana]**
