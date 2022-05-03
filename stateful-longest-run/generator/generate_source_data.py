@@ -26,7 +26,7 @@ from time import sleep
 
 
 def write_data(producer):
-    data_cnt = 20000
+    data_cnt = 2000000
     order_id = calendar.timegm(time.gmtime())
     max_price = 100000
     topic = "random_binary_msg"
