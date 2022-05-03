@@ -29,11 +29,13 @@ class CountRunLength(FlatMapFunction):
 
     def __init__(self):
         self.sum = None
+        self.max_lengths = None
 
     def open(self, runtime_context: RuntimeContext):
         # Useful to consult :
         # https://nightlies.apache.org/flink/flink-docs-release-1.13/api/python/_modules/pyflink/datastream/state.html
 
+        # Tuple to store a running tally of how many consecutive values have appeared
         descriptor = ValueStateDescriptor(
             "runInt",  # the state name
             Types.PICKLED_BYTE_ARRAY()  # type information
@@ -65,12 +67,12 @@ class CountRunLength(FlatMapFunction):
         if seen_int != current_run[0]:
             current_run = (seen_int, 1)
             self.sum.update(current_run)
-        elif seen_int == current_run[0]:
+        elif seen_int == current_run[0]: # current integer matches previous integer
             current_run = (seen_int, current_run[1] + 1)
             self.sum.update(current_run)
-            if max_lengths.get(seen_int) is None or current_run[1] > max_lengths.get(seen_int):
-                max_lengths[seen_int] = current_run[1]
-                self.max_lengths.update(max_lengths)
+            if max_lengths.get(seen_int) is None or current_run[1] > max_lengths.get(seen_int): # Longest run seen
+                max_lengths[seen_int] = current_run[1] # record new longest run seen in dictionary
+                self.max_lengths.update(max_lengths) # Update the dictionary
                 yield Row(seen_time, seen_int, max_lengths[seen_int])
 
 
