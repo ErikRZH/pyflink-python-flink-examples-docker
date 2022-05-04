@@ -105,7 +105,7 @@ def log_processing():
             ) with (
                 'connector' = 'elasticsearch-7',
                 'hosts' = 'http://elasticsearch:9200',
-                'index' = 'platform_run_3',
+                'index' = 'platform_run_2',
                 'sink.flush-on-checkpoint' = 'true',
                 'document-id.key-delimiter' = '$',
                 'sink.bulk-flush.max-size' = '42mb',
@@ -127,7 +127,7 @@ def log_processing():
     ds = t_env.to_data_stream(table)
 
     # Use Datastream API stateful function
-    ds = ds.key_by(lambda row: row[1]) \
+    ds = ds.key_by(lambda row: 1) \
         .flat_map(CountRunLength(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.INT()]))
     # Convert Datastream back to table
     table_out = t_env.from_data_stream(ds).alias("binaryInt")
