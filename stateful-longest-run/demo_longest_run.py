@@ -115,7 +115,6 @@ def log_processing():
                 'format' = 'json'
             )
     """
-    print("Printing result to stdout. Use --output to specify output path.")
 
     # Sets up Table API calls
     t_env.execute_sql(create_kafka_source_ddl)
