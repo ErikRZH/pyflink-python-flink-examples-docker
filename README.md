@@ -6,7 +6,7 @@ While examples and documentation for using pyflink with docker may be found [her
 This repository is intended to provide such further examples, **the repository makes no claim to represent best Pyflink practices**.
 
 ## Examples Included
-[(1)](wordcount) The word count standard example for streaming and batch using both the datastream and table APIs in a docker container.   
+[(1)](wordcount) The [standard](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/dev/python/table_api_tutorial/) wordcount example for streaming and batch using both the datastream and table APIs in a docker container.   
 **[Table API, Datastream API]**
 
 [(2)](modified-playground) A version of the playground from [here](https://github.com/pyflink/playgrounds) with modifications to support Flink 14.4, as well as minor cosmetic changes.  
