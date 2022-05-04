@@ -80,7 +80,7 @@ def log_processing():
     env = StreamExecutionEnvironment.get_execution_environment()
     t_env = StreamTableEnvironment.create(stream_execution_environment=env)
     t_env.get_config().get_configuration().set_string("pipeline.name",
-                                                      "Extended Pipeline: Average Pairs of Binary Numbers")
+                                                      "Extended Pipeline: Longest Run of Binary Numbers")
     t_env.get_config().get_configuration().set_boolean("python.fn-execution.memory.managed", True)
 
     create_kafka_source_ddl = """
