@@ -1,11 +1,11 @@
-## Stateful Function using Both APIs II
+## Stateful Function using both APIs II
 
-This example uses both API's and a stateful streaming API function.
+This example uses both API's and a stateful streaming API function. The example records the longest run of consecutive integers from a stream of random integers.
 
 The example consists of:  
-(1) Messages with a randomly selected 1 or 0 and a timestamp are generated and sent using kafka.  
-(2) Using Flink the longest run seen until this point is calculated, and when it is found it is notes, along with a timestamp and whether it was 0's or 1's.
-(3) The processed data is stored using elasticsearch and may be visualised with Kibana. So one can check the distribution of the computed average.
+1. Messages with a randomly selected 1 or 0 and a timestamp are generated and sent using kafka.  
+2. Using Flink the longest run seen until this point is calculated, and when it is found it is notes, along with a timestamp and whether it was 0's or 1's.
+3. The processed data is stored using elasticsearch and may be visualised with Kibana. So one can check the distribution of the computed average.
 
 The Flink part of the programme follows the flow:
 * Sink read from Kafka into Table [Table API]
