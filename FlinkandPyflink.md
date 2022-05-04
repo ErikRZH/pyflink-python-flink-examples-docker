@@ -1,4 +1,5 @@
-#Flink #
+# Flink #
+
 Flink is a framework for [distributed](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/deployment/overview/) stream (and batch) processing. You interact with Flink through one of its API's.
 
 Flink has two main API's the [**Table API**](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/dev/python/table/intro_to_table_api/) and the [**Datastream API**](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/dev/python/datastream/intro_to_datastream_api/). Their relationship is illustrated in Fig. 1 below, taken from [here](https://www.youtube.com/watch?v=vLLn5PxF2Lw).
@@ -9,11 +10,11 @@ A Flink job requires two things, a **source** (an entry point for streaming/batc
 
 Between the source and the sink you probably want some more or less non-trivial **transformation on your data**.
 To accomplish this most Flink programs follow the flow:
-0. Obtain an execution environment,
-1. Load/create the initial data, (**source**)
-2. Specify transformations on this data, 
-3. Specify where to put the results of your computations, (**sink**)
-4. Trigger the program execution
+1. Obtain an execution environment,
+2. Load/create the initial data, (**source**)
+3. Specify transformations on this data, 
+4. Specify where to put the results of your computations, (**sink**)
+5. Trigger the program execution
 
 Step 2. is where you use an API to specify the desired transformation. 
 
@@ -30,7 +31,7 @@ In the **Table API** the data is abstracted as a [dynamic table](https://nightli
 
 The **Datastream API** allows you more control over how the programme is executed, it does not feature the Table abstraction. In the DatastreamAPI the ``StreamExecutionEnvironment`` is what handles the abstraction, it is used to create datastreams and execute jobs etc. However, this API does not appear to support manipulation using Pandas etc. since it does not abstract the data as a table. 
 
-It is possible to [translated between](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/dev/python/datastream/intro_to_datastream_api/#conversion-between-datastream-and-table) the different APIs and you may therefore combine them in a symbiotic fashion.
+It is possible to [translate between](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/dev/python/datastream/intro_to_datastream_api/#conversion-between-datastream-and-table) the different APIs and you may therefore combine them in a symbiotic fashion.
 
 ## What now?
 With this birds eye overview of Flink I would suggest looking at the examples, these include:
@@ -42,4 +43,4 @@ When implementing custom stateful functions you have to be somewhat careful, thi
 [This example is illuminating for working with states](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/fault-tolerance/state/).
 
 ### Issues encountered
-1. **Kafka/ES sinks and sources: connector issues due to changed interfaces in Flink 1.14**. The more elaborate example was originally used Flink 1.13 and the connectors needed to interface with kafka and elasticsearch caused much trouble when upgrading to Flink 1.14. Given the evidence scattered online the following sequence of events seem to have cause the bug: in Flink 1.12 [a new kafka interface was introduced](https://nightlies.apache.org/flink/flink-docs-release-1.12/release-notes/flink-1.12.html) for connectors, and in [Flink 1.14](https://nightlies.apache.org/flink/flink-docs-release-1.14/release-notes/flink-1.14/) they [discontinued the old format and changed all connector interfaces](https://issues.apache.org/jira/browse/FLINK-23513). Thus: if you try to use connectors but get an error along the lines of `pyflink.util.exceptions.TableException: org.apache.flink.table.api.TableException: findAndCreateTableSource failed.` this may be what is causing you grief.
+1. **Kafka/ES sinks and sources: connector issues due to changed interfaces in Flink 1.14**. Example 2 originally used Flink 1.13 and the connectors needed to interface with kafka and elasticsearch caused much trouble when upgrading to Flink 1.14. Given the evidence scattered online the following sequence of events seem to have cause the problem: in Flink 1.12 [a new kafka interface was introduced](https://nightlies.apache.org/flink/flink-docs-release-1.12/release-notes/flink-1.12.html) for connectors, and in [Flink 1.14](https://nightlies.apache.org/flink/flink-docs-release-1.14/release-notes/flink-1.14/) they [discontinued the old format and changed all connector interfaces](https://issues.apache.org/jira/browse/FLINK-23513). Thus: if you try to use connectors but get an error along the lines of `pyflink.util.exceptions.TableException: org.apache.flink.table.api.TableException: findAndCreateTableSource failed.` this may be what is causing you grief.
