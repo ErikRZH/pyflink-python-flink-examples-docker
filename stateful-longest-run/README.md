@@ -28,7 +28,7 @@ To see the payment messages being sent you can run:
 ````
 sudo docker-compose exec kafka kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic random_binary_msg
 ````
-To see the elasticsearch data (before the job there should be none) look at [http://localhost:9200/platform_run_2/_search?pretty](http://localhost:9200/platform_run_2/_search?pretty).
+To see the elasticsearch data (before the job there should be none) look at [http://localhost:9200/platform_run_2/_search?pretty&size=30](http://localhost:9200/platform_run_2/_search?pretty&size=30).
 
 Submit the payment processing job
 ````commandline
