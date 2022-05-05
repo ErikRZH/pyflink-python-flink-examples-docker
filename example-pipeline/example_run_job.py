@@ -21,9 +21,10 @@ from pyflink.datastream import StreamExecutionEnvironment, TimeCharacteristic, F
     MapFunction
 from pyflink.datastream.state import ValueStateDescriptor, MapStateDescriptor
 from pyflink.table import StreamTableEnvironment, DataTypes, EnvironmentSettings, Schema
+import random
 
 
-class CountRunLength(FlatMapFunction):
+class SpoofRfiFlagger(FlatMapFunction):
     # Class used for identifying the longest consecutive run of integers in a datastream,
     # a single integer does not constitute a run.
 
@@ -60,20 +61,12 @@ class CountRunLength(FlatMapFunction):
         if max_lengths is None:
             max_lengths = {}
 
-        seen_int = value[1]
-        seen_time = value[0]
+        flag = random.randint()
+        creation_time = value[0]
+        baselineId = value[1]
+        signalValue = value[2]
 
-        # if the current integer and previous integers are different set run length to 1 and update previous integer
-        if seen_int != current_run[0]:
-            current_run = (seen_int, 1)
-            self.sum.update(current_run)
-        elif seen_int == current_run[0]: # current integer matches previous integer
-            current_run = (seen_int, current_run[1] + 1)
-            self.sum.update(current_run)
-            if max_lengths.get(seen_int) is None or current_run[1] > max_lengths.get(seen_int): # Longest run seen
-                max_lengths[seen_int] = current_run[1] # record new longest run seen in dictionary
-                self.max_lengths.update(max_lengths) # Update the dictionary
-                yield Row(seen_time, seen_int, max_lengths[seen_int])
+        yield Row(creation_time, baselineId, signalValue, flag)
 
 
 def log_processing():
@@ -128,8 +121,9 @@ def log_processing():
     ds = t_env.to_data_stream(table)
 
     # Use Datastream API stateful function
-    ds = ds.key_by(lambda row: 1) \
-        .flat_map(CountRunLength(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.INT()]))
+    # Key the streams by the baselineId
+    ds = ds.key_by(lambda row: row[1]) \
+        .flat_map(SpoofRfiFlagger(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.FLOAT(), Types.INT()]))
     # Convert Datastream back to table
     table_out = t_env.from_data_stream(ds).alias("binaryInt")
     # Write to sink
