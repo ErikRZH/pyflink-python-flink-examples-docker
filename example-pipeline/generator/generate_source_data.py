@@ -39,7 +39,8 @@ def write_data(producer):
         else:
             signal_value = math.sin((i/data_cnt)*1e5)
 
-        cur_data = {"createTime": ts, "baselineInd": random.rand([42,22,5]), "signalValue": signal_value}
+        baseline_id = random.choice([42,22,5])
+        cur_data = {"createTime": ts, "baselineInd": baseline_id, "signalValue": signal_value}
         producer.send(topic, value=cur_data)
         sleep(0.5)
 
