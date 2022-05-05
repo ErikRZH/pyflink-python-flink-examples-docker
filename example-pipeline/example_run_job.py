@@ -61,7 +61,7 @@ class SpoofRfiFlagger(FlatMapFunction):
         if max_lengths is None:
             max_lengths = {}
 
-        flag = random.randint()
+        flag = random.randint(0, 1)
         creation_time = value[0]
         baselineId = value[1]
         signalValue = value[2]
@@ -94,12 +94,13 @@ def log_processing():
     create_es_sink_ddl = """
             CREATE TABLE es_sink (
                 createTime VARCHAR,
-                runInt INT,
-                runLength INT
+                baselineId INT,
+                signalValue FLOAT,
+                flagId INT
             ) with (
                 'connector' = 'elasticsearch-7',
                 'hosts' = 'http://elasticsearch:9200',
-                'index' = 'platform_run_2',
+                'index' = 'example_pipeline_1',
                 'sink.flush-on-checkpoint' = 'true',
                 'document-id.key-delimiter' = '$',
                 'sink.bulk-flush.max-size' = '42mb',
@@ -125,7 +126,7 @@ def log_processing():
     ds = ds.key_by(lambda row: row[1]) \
         .flat_map(SpoofRfiFlagger(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.FLOAT(), Types.INT()]))
     # Convert Datastream back to table
-    table_out = t_env.from_data_stream(ds).alias("binaryInt")
+    table_out = t_env.from_data_stream(ds)
     # Write to sink
     table_out.execute_insert("es_sink")
 
