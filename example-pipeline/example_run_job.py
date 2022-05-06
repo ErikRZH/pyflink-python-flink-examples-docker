@@ -15,51 +15,22 @@
 #  See the License for the specific language governing permissions and
 # limitations under the License.
 ################################################################################
-from pyflink.common import WatermarkStrategy, Row
+from pyflink.common import WatermarkStrategy, Row, Time
 from pyflink.common.typeinfo import Types
 from pyflink.datastream import StreamExecutionEnvironment, TimeCharacteristic, FlatMapFunction, RuntimeContext, \
-    MapFunction
+    MapFunction, ProcessWindowFunction, WindowAssigner, Trigger
 from pyflink.datastream.state import ValueStateDescriptor, MapStateDescriptor
 from pyflink.table import StreamTableEnvironment, DataTypes, EnvironmentSettings, Schema
 import random
-
+from pyflink.datastream.window import TimeWindow, TimeWindowSerializer # In 1.16 use TumblingEventTimeWindows instead!
+from pyflink.common.serializer import TypeSerializer
+from typing import Iterable, Tuple
+import statistics
 
 class SpoofRfiFlagger(FlatMapFunction):
     # Class used for identifying the longest consecutive run of integers in a datastream,
     # a single integer does not constitute a run.
-
-    def __init__(self):
-        self.sum = None
-        self.max_lengths = None
-
-    def open(self, runtime_context: RuntimeContext):
-        # Useful to consult :
-        # https://nightlies.apache.org/flink/flink-docs-release-1.13/api/python/_modules/pyflink/datastream/state.html
-
-        # Tuple to store a running tally of how many consecutive values have appeared
-        descriptor = ValueStateDescriptor(
-            "runInt",  # the state name
-            Types.PICKLED_BYTE_ARRAY()  # type information
-        )
-        self.sum = runtime_context.get_state(descriptor)
-
-        # Dictionary to keep track of the longest runs seen
-        descriptor_max = MapStateDescriptor(
-            "runLength",  # the state name
-            Types.INT(),  # Key type
-            Types.INT()  # Value type
-        )
-        self.max_lengths = runtime_context.get_state(descriptor_max)
-
     def flat_map(self, value):
-        # access the state value
-        current_run = self.sum.value()  # Access the value of the state stored in self.sum
-        if current_run is None:
-            current_run = (-1, 0)  # Entries correspond to (0) previous entry and (1) number of previous entries in run.
-
-        max_lengths = self.max_lengths.value()  # Access the value of the state stored in self.sum
-        if max_lengths is None:
-            max_lengths = {}
 
         flag = random.randint(0, 1)
         creation_time = value[0]
@@ -68,6 +39,44 @@ class SpoofRfiFlagger(FlatMapFunction):
 
         yield Row(creation_time, baselineId, signalValue, flag)
 
+# Method for creating a tumbling window
+class TumblingEventWindowAssigner(WindowAssigner[Tuple, TimeWindow]):
+
+    def __init__(self, size: int, offset: int, is_event_time: bool):
+        self._size = size
+        self._offset = offset
+        self._is_event_time = is_event_time
+
+    def assign_windows(self,
+                       element: Tuple,
+                       timestamp: int,
+                       context: WindowAssigner.WindowAssignerContext) -> Collection[TimeWindow]:
+        start = TimeWindow.get_window_start_with_offset(timestamp, self._offset, self._size)
+        return [TimeWindow(start, start + self._size)]
+
+    def get_default_trigger(self, env) -> Trigger[Tuple, TimeWindow]:
+        return EventTimeTrigger()
+
+    def get_window_serializer(self) -> TypeSerializer[TimeWindow]:
+        return TimeWindowSerializer()
+
+    def is_event_time(self) -> bool:
+        return False
+# Window function to work out QA metrics on sliding windows
+# https://nightlies.apache.org/flink/flink-docs-stable/api/java/org/apache/flink/streaming/api/functions/windowing/ProcessWindowFunction.Context.html
+class SummaryWindowProcessFunction(ProcessWindowFunction[tuple, tuple, int, TimeWindow]):
+    # Returns Baseline id: INT , mean: FLOAT, max: FLOAT, min: FLOAT, n_elements: INT, n_flags = INT, windows-start time: INT, window-end time: INT
+    def process(self,
+                key: int,
+                context: ProcessWindowFunction.Context[TimeWindow],
+                elements: Iterable[tuple]) -> Iterable[tuple]:
+        data_values = [e[2] for e in elements] # Get the part of the input which contain the data
+        flagger_values = [e[3] for e in elements] # Get the flags
+
+        return [(key, statistics.mean(data_values), max(data_values), min(data_values), len(data_values), sum(flagger_values), context.window().start, context.window().end)]
+
+    def clear(self, context: ProcessWindowFunction.Context) -> None:
+        pass
 
 def log_processing():
     env = StreamExecutionEnvironment.get_execution_environment()
@@ -111,9 +120,34 @@ def log_processing():
             )
     """
 
+    create_es_summary_sink_ddl = """
+            CREATE TABLE es_summary_sink (
+                baselineId INT,
+                winMean FLOAT, 
+                winMax FLOAT, 
+                winMin FLOAT, 
+                nElements INT,
+                nFlags INT, 
+                windowsStartTime INT,
+                windowEndTime INT
+            ) with (
+                'connector' = 'elasticsearch-7',
+                'hosts' = 'http://elasticsearch:9200',
+                'index' = 'example_pipeline_summary_1',
+                'sink.flush-on-checkpoint' = 'true',
+                'document-id.key-delimiter' = '$',
+                'sink.bulk-flush.max-size' = '42mb',
+                'sink.bulk-flush.max-actions' = '32',
+                'sink.bulk-flush.interval' = '1000',
+                'sink.bulk-flush.backoff.delay' = '1000',
+                'format' = 'json'
+            )
+    """
+
     # Sets up Table API calls
     t_env.execute_sql(create_kafka_source_ddl)
     t_env.execute_sql(create_es_sink_ddl)
+    t_env.execute_sql(create_es_summary_sink_ddl)
 
     # Create Table using the source
     table = t_env.from_path("baseline_signal_source")
@@ -123,12 +157,19 @@ def log_processing():
 
     # Use Datastream API stateful function
     # Key the streams by the baselineId
-    ds = ds.key_by(lambda row: row[1]) \
-        .flat_map(SpoofRfiFlagger(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.FLOAT(), Types.INT()]))
+    ds = ds.key_by(lambda row: row[1])
+    # Spoof RFI flagging
+    ds.flat_map(SpoofRfiFlagger(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.FLOAT(), Types.INT()]))
+    # Tumbling QA window, that is that entries appear once.
+    ds.window(TumblingEventTimeWindows.of(Time.seconds(10))) # Time.milliseconds may be better is the sending rate is increased
+    # Apply functions to these windows
+    # Returns Baseline id: INT , mean: FLOAT, max: FLOAT, min: FLOAT, n_elements: INT, n_flags = INT, windows-start time: INT, window-end time: INT
+    ds.process(SummaryWindowProcessFunction(),
+                 Types.TUPLE([Types.INT(), Types.FLOAT(), Types.FLOAT(), Types.FLOAT(), Types.INT(), Types.INT(), Types.INT(), Types.INT()]))
     # Convert Datastream back to table
     table_out = t_env.from_data_stream(ds)
     # Write to sink
-    table_out.execute_insert("es_sink")
+    table_out.execute_insert("es_summary_sink")
 
 
 if __name__ == '__main__':
