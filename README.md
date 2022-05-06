@@ -1,5 +1,5 @@
 # Pyflink and Docker Examples
-This repository concerns the Python interface of the Flink Streaming Processing framework, called pyflink.
+This repository concerns the Python interface of the [Flink](https://flink.apache.org/) Streaming Processing framework, called pyflink.
 
 While examples and documentation for using pyflink with docker may be found [here](https://nightlies.apache.org/flink/flink-docs-stable/), [here](https://github.com/apache/flink/tree/release-1.14/flink-python/pyflink/examples) and [here](https://github.com/pyflink/playgrounds) (only for Flink 1.13 at the time of writing) some may benefit from seeing more examples, including examples of additional use cases. 
 
