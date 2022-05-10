@@ -17,6 +17,7 @@
 ################################################################################
 from pyflink.common import WatermarkStrategy, Row, Time
 from pyflink.common.typeinfo import Types
+from pyflink.common.restart_strategy import RestartStrategies
 from pyflink.datastream import StreamExecutionEnvironment, TimeCharacteristic, FlatMapFunction, RuntimeContext, \
     MapFunction, ProcessWindowFunction, WindowAssigner, Trigger
 from pyflink.datastream.state import ValueStateDescriptor, MapStateDescriptor
@@ -61,6 +62,7 @@ class SpoofRfiFlagger(FlatMapFunction):
 def log_processing():
     env = StreamExecutionEnvironment.get_execution_environment()
     env.set_parallelism(8)
+    env.set_restart_strategy(RestartStrategies.fixed_delay_restart(restart_attempts=60, delay_between_attempts=int(2*1e3))) #since delay is in milliseconds
     t_env = StreamTableEnvironment.create(stream_execution_environment=env)
     t_env.get_config().get_configuration().set_string("pipeline.name",
                                                       "Extended Pipeline: Longest Run of Binary Numbers")

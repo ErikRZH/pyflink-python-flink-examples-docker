@@ -30,21 +30,27 @@ sudo docker-compose exec kafka kafka-console-consumer.sh --bootstrap-server kafk
 ````
 To see the elasticsearch data (before the job there should be none) look at [http://localhost:9200/example_pipeline_1/_search?pretty&size=30](http://localhost:9200/example_pipeline_1/_search?pretty&size=30).
 
-Submit the payment processing job
+Submit the job
 ````commandline
 sudo docker-compose exec jobmanager ./bin/flink run -py /opt/stateful-longest-run/example_run_job.py -d
 ````
+
+** This should not do anything as there is not enough taskslots for the parallelism**
+Launch more task managers to get 8 taskslots at least
+To launch more taskmanagers, so the total is 8.
+
+```
+sudo docker-compose scale taskmanager=<N>
+```
+
+The job should not run correctly.
 
 You can inspect the job at the various stages at:  
 Flink Web UI [http://localhost:8081](http://localhost:8081).   
 Elasticsearch [http://localhost:9200](http://localhost:9200).   
 Kibana [http://localhost:5601](http://localhost:5601).
 
-To launch more taskmanagers, so the total is 8.
 
-```
-sudo docker-compose scale taskmanager=<N>
-```
 On Kibana there is a dashboard showing the spending of the different teams.
 
 To shut it down.

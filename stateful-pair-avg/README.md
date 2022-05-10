@@ -30,7 +30,7 @@ sudo docker-compose exec kafka kafka-console-consumer.sh --bootstrap-server kafk
 ````
 To see the elasticsearch data (before the job there should be none) look at [http://localhost:9200/platform_avg_1/_search?pretty](http://localhost:9200/platform_avg_1/_search?pretty).
 
-Submit the payment processing job
+Submit the job
 ````commandline
 sudo docker-compose exec jobmanager ./bin/flink run -py /opt/stateful-pair-avg/demo_msg_proccessing.py -d
 ````
