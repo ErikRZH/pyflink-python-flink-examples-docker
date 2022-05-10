@@ -60,6 +60,7 @@ class SpoofRfiFlagger(FlatMapFunction):
 
 def log_processing():
     env = StreamExecutionEnvironment.get_execution_environment()
+    env.set_parallelism(8)
     t_env = StreamTableEnvironment.create(stream_execution_environment=env)
     t_env.get_config().get_configuration().set_string("pipeline.name",
                                                       "Extended Pipeline: Longest Run of Binary Numbers")

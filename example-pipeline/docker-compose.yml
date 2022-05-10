@@ -41,10 +41,14 @@ services:
     depends_on:
       - jobmanager
     command: taskmanager
+    scale: 1
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 2
     links:
       - jobmanager:jobmanager
-    environment:
-      - JOB_MANAGER_RPC_ADDRESS=jobmanager
   zookeeper:
     image: wurstmeister/zookeeper:3.4.6
     ports:
