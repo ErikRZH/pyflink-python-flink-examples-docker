@@ -33,6 +33,25 @@ The **Datastream API** allows you more control over how the programme is execute
 
 It is possible to [translate between](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/dev/python/datastream/intro_to_datastream_api/#conversion-between-datastream-and-table) the different APIs and you may therefore combine them in a symbiotic fashion.
 
+## I want my job to run in parallel and quickly* (etc.)!
+For your flink job to execute in parallel there need to be several task slots, this is so Flink can allocate tasks to be performed in parallel to different slots. If the concept of task slots is new to you, I would strongly encourage you to read the short text below.
+
+###Task Managers and Task Slots
+Task Managers, are the worker processes in Flink [[1]](https://learning.oreilly.com/library/view/stream-processing-with/9781491974285/ch03.html#chap-3-setup-components), if you use docker they run in different containers, perhaps with fun names such as *"example-pipeline_taskmanager_16"*. ***Task managers* are managed by the *Job Manager***, which allocates them work. 
+
+Each Task Manager can have one or several Task Slots, each Task Slot can be used to perform some task. The Task Slots in one job manager can perform tasks which are a part of the same job, or different jobs, any tasks the Job manager allocates them. Tasks are run in separathe threads within the same Java Virtual Machine (JVM) on the Task Manager. There is therefore less communication overhead for tasks executing in slots on the same Task Manager, but on the flipside a failure in one task can kill the entire Task Manager and all its tasks (the Job Manager takes this into account when assigning work).
+
+### Ok great, but how do I run things in parallel?
+Thank you for reading the above text on Task Slots. You can specify the parallelism you want for the entire job, and/or individual operations to be performed with. In Python you can set the parallelism of the environment in a job with ``env.set_parallelism(n)``, where *n* is the parallelism (if nothing is specified the default is a parallelism of 1). Flink then tries to allocate work to different Task Slots based on this, so for a parallelism of *n* you need at least *n* available Task Slots. 
+
+That is it, just tell Flink how much parallelism you want and give it the task slots and Flink takes care of the rest.
+
+**At the moment I cannot tell you how to make your flink job run quickly.*
+
+## So what happens when I submit a job?
+When you submit a job you provide a high level plan of what you want Flink to do. Flink's **Job Manager** then takes a look at your instructions and another look at what it has to work with (for example, taskmanagers, taskslots etc.) and forms an *execution plan*. This execution plan then determines the specifics of how flink executes your job, the execution plan for a job can extracted and visualised as shown [here](https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/dev/execution/execution_plans/).
+
+
 ## What now?
 With this birds eye overview of Flink I would suggest looking at the examples, these include:
 * The *word count example*, loads data from storage and counts the number of occurrences of each word, writes output to standard out.
