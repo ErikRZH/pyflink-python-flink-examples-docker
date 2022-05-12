@@ -15,7 +15,7 @@
 #  See the License for the specific language governing permissions and
 # limitations under the License.
 ################################################################################
-from pyflink.common import WatermarkStrategy, Row, Time
+from pyflink.common import WatermarkStrategy, Row, Time, Configuration
 from pyflink.common.typeinfo import Types
 from pyflink.common.restart_strategy import RestartStrategies
 from pyflink.datastream import StreamExecutionEnvironment, TimeCharacteristic, FlatMapFunction, RuntimeContext, \
@@ -61,12 +61,14 @@ class SpoofRfiFlagger(FlatMapFunction):
 
 def log_processing():
     env = StreamExecutionEnvironment.get_execution_environment()
+    configuration = Configuration()
     env.set_parallelism(5)
     env.set_restart_strategy(RestartStrategies.fixed_delay_restart(restart_attempts=60, delay_between_attempts=int(2*1e3))) #since delay is in milliseconds
     t_env = StreamTableEnvironment.create(stream_execution_environment=env)
     t_env.get_config().get_configuration().set_string("pipeline.name",
                                                       "Extended Pipeline: Longest Run of Binary Numbers")
     t_env.get_config().get_configuration().set_boolean("python.fn-execution.memory.managed", True)
+    t_env.get_config().get_configuration().set_string("table.exec.source.idle-timeout", "1 s")
 
     create_kafka_source_ddl = """
             CREATE TABLE baseline_signal_source (
@@ -75,6 +77,7 @@ def log_processing():
                 signalValue FLOAT
             ) WITH (
               'connector' = 'kafka',
+              'sink.partitioner' = 'round-robin',
               'topic' = 'baseline_signal',
               'properties.bootstrap.servers' = 'kafka:9092',
               'properties.group.id' = 'test_3',
@@ -193,14 +196,15 @@ def log_processing():
 
     # Groups the rows based on timestamps within 15 seconds of one another, stores the window reference in a "column" w
     # Using expressions from https://nightlies.apache.org/flink/flink-docs-stable/api/python/_modules/pyflink/table/expression.html
-    table_out = table_flagged.window(Tumble.over(lit(15).seconds).on(col("ts")).alias("w")) \
+    table_flagged = table_flagged.window(Tumble.over(lit(15).seconds).on(col("ts")).alias("w")) \
                   .group_by(table_flagged.baselineId, col('w')) \
                   .select(table_flagged.baselineId, table_flagged.signalValue.avg, table_flagged.signalValue.max,
                           table_flagged.signalValue.min, table_flagged.baselineId.count, table_flagged.flagId.sum,
                           col("w").start, col("w").end)
 
-    table_out.execute_insert("es_summary_sink")
+    table_flagged.execute_insert("print")
 
+    print(env.get_execution_plan())
 
 if __name__ == '__main__':
     log_processing()
