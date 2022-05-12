@@ -46,7 +46,7 @@ services:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
-        taskmanager.numberOfTaskSlots: 1
+        taskmanager.numberOfTaskSlots: 2
     links:
       - jobmanager:jobmanager
   zookeeper:
@@ -75,7 +75,7 @@ services:
     environment:
       - cluster.name=docker-cluster
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms10g -Xmx10g"
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
       - discovery.type=single-node
     ports:
       - "9200:9200"
