@@ -62,12 +62,15 @@ class SpoofRfiFlagger(FlatMapFunction):
 def log_processing():
     env = StreamExecutionEnvironment.get_execution_environment()
     configuration = Configuration()
-    env.set_parallelism(5)
+    env.set_parallelism(10)
     env.set_restart_strategy(RestartStrategies.fixed_delay_restart(restart_attempts=60, delay_between_attempts=int(2*1e3))) #since delay is in milliseconds
     t_env = StreamTableEnvironment.create(stream_execution_environment=env)
     t_env.get_config().get_configuration().set_string("pipeline.name",
                                                       "Extended Pipeline: Longest Run of Binary Numbers")
     t_env.get_config().get_configuration().set_boolean("python.fn-execution.memory.managed", True)
+    # This is so that no downstream process waits for watermarks which kafka does not provide.
+    # Without this the pipeline fails when parallelism is greater than 4
+    # I am not sure how kafka topic paritions work, but they are apparently used to generate watermarks at the source.
     t_env.get_config().get_configuration().set_string("table.exec.source.idle-timeout", "1 s")
 
     create_kafka_source_ddl = """
@@ -122,8 +125,8 @@ def log_processing():
                 'index' = 'example_pipeline_summary_1',
                 'sink.flush-on-checkpoint' = 'true',
                 'document-id.key-delimiter' = '$',
-                'sink.bulk-flush.max-size' = '10gb',
-                'sink.bulk-flush.max-actions' = '320000',
+                'sink.bulk-flush.max-size' = '2gb',
+                'sink.bulk-flush.max-actions' = '320',
                 'sink.bulk-flush.interval' = '1s',
                 'sink.bulk-flush.backoff.delay' = '10s',
                 'format' = 'json'
@@ -177,7 +180,7 @@ def log_processing():
     # Key the streams by the baselineId
     ds = ds.key_by(lambda row: row[1])
     # Spoof RFI flagging
-    ds_flagged = ds.flat_map(SpoofRfiFlagger(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.FLOAT(), Types.INT()])).set_parallelism(5)
+    ds_flagged = ds.flat_map(SpoofRfiFlagger(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.FLOAT(), Types.INT()]))
 
 
     # Convert back to Table for Summary Statistics
@@ -202,7 +205,7 @@ def log_processing():
                           table_flagged.signalValue.min, table_flagged.baselineId.count, table_flagged.flagId.sum,
                           col("w").start, col("w").end)
 
-    table_flagged.execute_insert("print")
+    table_flagged.execute_insert("es_summary_sink")
 
     print(env.get_execution_plan())
 
