@@ -119,18 +119,50 @@ def log_processing():
                 'index' = 'example_pipeline_summary_1',
                 'sink.flush-on-checkpoint' = 'true',
                 'document-id.key-delimiter' = '$',
-                'sink.bulk-flush.max-size' = '512mb',
-                'sink.bulk-flush.max-actions' = '1024',
-                'sink.bulk-flush.interval' = '10000',
-                'sink.bulk-flush.backoff.delay' = '10000',
+                'sink.bulk-flush.max-size' = '10gb',
+                'sink.bulk-flush.max-actions' = '320000',
+                'sink.bulk-flush.interval' = '1s',
+                'sink.bulk-flush.backoff.delay' = '10s',
                 'format' = 'json'
             )
     """
 
+    create_print_sink_dll = """    
+            CREATE TABLE print (
+                baselineId INT,
+                winMean FLOAT, 
+                winMax FLOAT, 
+                winMin FLOAT, 
+                nElements BIGINT,
+                nFlags INT, 
+                windowsStartTime TIMESTAMP(3),
+                windowEndTime TIMESTAMP(3)
+            ) WITH (
+                'connector' = 'print',
+                'sink.parallelism' = '1'
+            )
+    """
     # Sets up Table API calls
     t_env.execute_sql(create_kafka_source_ddl)
     t_env.execute_sql(create_es_sink_ddl)
     t_env.execute_sql(create_es_summary_sink_ddl)
+    t_env.execute_sql(create_print_sink_dll)
+
+    t_env.create_temporary_table(
+        'sink',
+        TableDescriptor.for_connector('print')
+            .schema(Schema.new_builder()
+                    .column("baselineId", DataTypes.INT())
+                    .column("winMean", DataTypes.FLOAT())
+                    .column("winMax", DataTypes.FLOAT())
+                    .column("winMin", DataTypes.FLOAT())
+                    .column("nElements", DataTypes.BIGINT())
+                    .column("nFlags", DataTypes.INT())
+                    .column("windowsStartTime", DataTypes.TIMESTAMP())
+                    .column("windowsEndTime", DataTypes.TIMESTAMP())
+                    .build()
+                    )
+            .build())
 
     # Create Table using the source
     table = t_env.from_path("baseline_signal_source")
@@ -167,7 +199,7 @@ def log_processing():
                           table_flagged.signalValue.min, table_flagged.baselineId.count, table_flagged.flagId.sum,
                           col("w").start, col("w").end)
 
-    table_out.execute_insert("es_summary_sink")
+    table_out.execute_insert("print")
 
 
 if __name__ == '__main__':
