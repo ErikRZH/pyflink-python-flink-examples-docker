@@ -174,7 +174,7 @@ def log_processing():
     # Key the streams by the baselineId
     ds = ds.key_by(lambda row: row[1])
     # Spoof RFI flagging
-    ds_flagged = ds.flat_map(SpoofRfiFlagger(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.FLOAT(), Types.INT()])).set_parallelism(4)
+    ds_flagged = ds.flat_map(SpoofRfiFlagger(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.FLOAT(), Types.INT()])).set_parallelism(5)
 
 
     # Convert back to Table for Summary Statistics
