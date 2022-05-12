@@ -61,7 +61,7 @@ class SpoofRfiFlagger(FlatMapFunction):
 
 def log_processing():
     env = StreamExecutionEnvironment.get_execution_environment()
-    env.set_parallelism(2)
+    env.set_parallelism(4)
     env.set_restart_strategy(RestartStrategies.fixed_delay_restart(restart_attempts=60, delay_between_attempts=int(2*1e3))) #since delay is in milliseconds
     t_env = StreamTableEnvironment.create(stream_execution_environment=env)
     t_env.get_config().get_configuration().set_string("pipeline.name",
@@ -119,10 +119,10 @@ def log_processing():
                 'index' = 'example_pipeline_summary_1',
                 'sink.flush-on-checkpoint' = 'true',
                 'document-id.key-delimiter' = '$',
-                'sink.bulk-flush.max-size' = '42mb',
-                'sink.bulk-flush.max-actions' = '32',
-                'sink.bulk-flush.interval' = '1000',
-                'sink.bulk-flush.backoff.delay' = '1000',
+                'sink.bulk-flush.max-size' = '512mb',
+                'sink.bulk-flush.max-actions' = '1024',
+                'sink.bulk-flush.interval' = '10000',
+                'sink.bulk-flush.backoff.delay' = '10000',
                 'format' = 'json'
             )
     """
