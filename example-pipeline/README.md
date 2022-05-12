@@ -57,3 +57,6 @@ To shut it down.
 ```
 sudo docker-compose down
 ```
+
+###Considerations
+If the job suddenly fails as the parallelism increases, a cause may be that some watermarks are not used. Thus parts of the execution halts indefinitely waiting for the unused watermark, this does not throw an error and can be difficult to troubleshoot.
