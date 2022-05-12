@@ -61,7 +61,7 @@ class SpoofRfiFlagger(FlatMapFunction):
 
 def log_processing():
     env = StreamExecutionEnvironment.get_execution_environment()
-    env.set_parallelism(7)
+    env.set_parallelism(5)
     env.set_restart_strategy(RestartStrategies.fixed_delay_restart(restart_attempts=60, delay_between_attempts=int(2*1e3))) #since delay is in milliseconds
     t_env = StreamTableEnvironment.create(stream_execution_environment=env)
     t_env.get_config().get_configuration().set_string("pipeline.name",
@@ -174,7 +174,7 @@ def log_processing():
     # Key the streams by the baselineId
     ds = ds.key_by(lambda row: row[1])
     # Spoof RFI flagging
-    ds_flagged = ds.flat_map(SpoofRfiFlagger(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.FLOAT(), Types.INT()])).set_parallelism(2)
+    ds_flagged = ds.flat_map(SpoofRfiFlagger(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.FLOAT(), Types.INT()])).set_parallelism(4)
 
 
     # Convert back to Table for Summary Statistics
