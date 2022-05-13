@@ -95,7 +95,7 @@ def qa_processing():
     env.set_restart_strategy(RestartStrategies.fixed_delay_restart(restart_attempts=60, delay_between_attempts=int(2*1e3))) #since delay is in milliseconds
     t_env = StreamTableEnvironment.create(stream_execution_environment=env)
     t_env.get_config().get_configuration().set_string("pipeline.name",
-                                                      "Prototype QA Metric Generation using Spoof Receive")
+                                                      "Prototype QA Metric Generation: Spoof Receive")
     t_env.get_config().get_configuration().set_boolean("python.fn-execution.memory.managed", True)
     # This is so that no downstream process waits for watermarks which kafka does not provide.
     # Without this the pipeline fails when parallelism is greater than 4.
