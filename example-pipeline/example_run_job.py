@@ -160,16 +160,16 @@ def qa_processing():
                 'format' = 'json'
             )
     """
-    # Use upsert for the current RFI values
+    # Use upsert for the current RFI values, this is the case if a primary key is defined. In this case baselineID
     create_es_rfi_current_sink_ddl = """
             CREATE TABLE es_rfi_current_sink (
                 baselineId INT,
-                nRfiFlag INT
+                nRfiFlag INT,
+            PRIMARY KEY (baselineId) NOT ENFORCED
             ) with (
                 'connector' = 'elasticsearch-7',
                 'hosts' = 'http://elasticsearch:9200',
                 'index' = 'example_pipeline_rfi_current_1',
-                'update-mode' = 'upsert',
                 'sink.flush-on-checkpoint' = 'true',
                 'document-id.key-delimiter' = '$',
                 'sink.bulk-flush.max-size' = '2gb',
