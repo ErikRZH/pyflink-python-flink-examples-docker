@@ -40,7 +40,7 @@ Flink Web UI [http://localhost:8081](http://localhost:8081).
 Elasticsearch [http://localhost:9200](http://localhost:9200).   
 Kibana [http://localhost:5601](http://localhost:5601).
 
-On Kibana there is a dashboard showing the spending of the different teams.
+On Kibana there is a dashboard showing the distribution of the average rounded down to the closest integer, of the last two random integers seen.
 
 To shut it down.
 ```
