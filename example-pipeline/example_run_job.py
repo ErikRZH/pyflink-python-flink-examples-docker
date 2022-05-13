@@ -42,7 +42,6 @@ class SpoofRfiFlagger(FlatMapFunction):
 
         yield Row(creation_time, baselineId, signalValue, flag)
 
-
 class RfiQaRuns(FlatMapFunction):
     # Class used for identifying the longest consecutive run of integers in a datastream,
     # a single integer does not constitute a run.
@@ -90,7 +89,7 @@ class RfiQaCurrent(FlatMapFunction):
 
         yield Row(baselineId, flag)
 
-def log_processing():
+def qa_processing():
     env = StreamExecutionEnvironment.get_execution_environment()
     configuration = Configuration()
     env.set_parallelism(5)
@@ -161,6 +160,7 @@ def log_processing():
                 'format' = 'json'
             )
     """
+    # Use upsert for the current RFI values
     create_es_rfi_current_sink_ddl = """
             CREATE TABLE es_rfi_current_sink (
                 baselineId INT,
@@ -169,6 +169,7 @@ def log_processing():
                 'connector' = 'elasticsearch-7',
                 'hosts' = 'http://elasticsearch:9200',
                 'index' = 'example_pipeline_rfi_current_1',
+                'update-mode' = 'upsert',
                 'sink.flush-on-checkpoint' = 'true',
                 'document-id.key-delimiter' = '$',
                 'sink.bulk-flush.max-size' = '2gb',
@@ -250,7 +251,7 @@ def log_processing():
     # Datastream which records the current flag in the baseline
     ds_rfi_qa_current = ds_flagged.key_by(lambda row: row[1]) \
         .flat_map(RfiQaCurrent(), output_type=Types.ROW([Types.INT(), Types.INT()]))
-
+    # Convert the datastream to a table so it can be written using table sinks.
     table_rfi_qa_current = t_env.from_data_stream(ds_rfi_qa_current,
               Schema.new_builder()
               .column("f0", DataTypes.INT())
@@ -269,4 +270,4 @@ def log_processing():
     print(env.get_execution_plan())
     statement_set.execute()
 if __name__ == '__main__':
-    log_processing()
+    qa_processing()
