@@ -80,15 +80,24 @@ class RfiQaRuns(FlatMapFunction):
             # time = datetime.fromisoformat(seen_time)
             yield Row(value[1], current_run[1], seen_time) #baselineId, length of RFI, RFI end time
 
+class RfiQaCurrent(FlatMapFunction):
+    # Class used for identifying the longest consecutive run of integers in a datastream,
+    # a single integer does not constitute a run.
+    def flat_map(self, value):
+
+        flag = value[3]
+        baselineId = value[1]
+
+        yield Row(baselineId, flag)
 
 def log_processing():
     env = StreamExecutionEnvironment.get_execution_environment()
     configuration = Configuration()
-    env.set_parallelism(10)
+    env.set_parallelism(5)
     env.set_restart_strategy(RestartStrategies.fixed_delay_restart(restart_attempts=60, delay_between_attempts=int(2*1e3))) #since delay is in milliseconds
     t_env = StreamTableEnvironment.create(stream_execution_environment=env)
     t_env.get_config().get_configuration().set_string("pipeline.name",
-                                                      "Extended Pipeline: Longest Run of Binary Numbers")
+                                                      "Prototype QA Metric Generation using Spoof Receive")
     t_env.get_config().get_configuration().set_boolean("python.fn-execution.memory.managed", True)
     # This is so that no downstream process waits for watermarks which kafka does not provide.
     # Without this the pipeline fails when parallelism is greater than 4.
@@ -110,26 +119,6 @@ def log_processing():
               'value.format' = 'json'
             )
             """
-
-    create_es_sink_ddl = """
-            CREATE TABLE es_sink (
-                ts TIMESTAMP(3),
-                baselineId INT,
-                signalValue FLOAT,
-                flagId INT
-            ) with (
-                'connector' = 'elasticsearch-7',
-                'hosts' = 'http://elasticsearch:9200',
-                'index' = 'example_pipeline_2',
-                'sink.flush-on-checkpoint' = 'true',
-                'document-id.key-delimiter' = '$',
-                'sink.bulk-flush.max-size' = '42mb',
-                'sink.bulk-flush.max-actions' = '32',
-                'sink.bulk-flush.interval' = '1000',
-                'sink.bulk-flush.backoff.delay' = '1000',
-                'format' = 'json'
-            )
-    """
 
     create_es_summary_sink_ddl = """
             CREATE TABLE es_summary_sink (
@@ -172,6 +161,23 @@ def log_processing():
                 'format' = 'json'
             )
     """
+    create_es_rfi_current_sink_ddl = """
+            CREATE TABLE es_rfi_current_sink (
+                baselineId INT,
+                nRfiFlag INT
+            ) with (
+                'connector' = 'elasticsearch-7',
+                'hosts' = 'http://elasticsearch:9200',
+                'index' = 'example_pipeline_rfi_current_1',
+                'sink.flush-on-checkpoint' = 'true',
+                'document-id.key-delimiter' = '$',
+                'sink.bulk-flush.max-size' = '2gb',
+                'sink.bulk-flush.max-actions' = '320',
+                'sink.bulk-flush.interval' = '1s',
+                'sink.bulk-flush.backoff.delay' = '10s',
+                'format' = 'json'
+            )
+    """
 
     create_print_sink_dll = """    
             CREATE TABLE print (
@@ -190,9 +196,9 @@ def log_processing():
     """
     # Sets up Table API calls
     t_env.execute_sql(create_kafka_source_ddl)
-    t_env.execute_sql(create_es_sink_ddl)
     t_env.execute_sql(create_es_summary_sink_ddl)
     t_env.execute_sql(create_es_rfi_run_sink_ddl)
+    t_env.execute_sql(create_es_rfi_current_sink_ddl)
     t_env.execute_sql(create_print_sink_dll)
 
     # Create Table using the source
@@ -241,11 +247,23 @@ def log_processing():
               .build()
               ).alias("baselineId, nRfiSamples, RfiEndTime")
 
+    # Datastream which records the current flag in the baseline
+    ds_rfi_qa_current = ds_flagged.key_by(lambda row: row[1]) \
+        .flat_map(RfiQaCurrent(), output_type=Types.ROW([Types.INT(), Types.INT()]))
+
+    table_rfi_qa_current = t_env.from_data_stream(ds_rfi_qa_current,
+              Schema.new_builder()
+              .column("f0", DataTypes.INT())
+              .column("f1", DataTypes.INT())
+              .build()
+              ).alias("baselineId, nRfiFlag")
+
     # To have multiple sinks in a job we use statement sets
     # create a statement set
     statement_set = t_env.create_statement_set()
     statement_set.add_insert("es_summary_sink", table_flagged)
     statement_set.add_insert("es_rfi_run_sink",  table_rfi_qa)
+    statement_set.add_insert("es_rfi_current_sink", table_rfi_qa_current)
     # Prints the execution plan which can be visualised here:
     # https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/dev/execution/execution_plans/
     print(env.get_execution_plan())

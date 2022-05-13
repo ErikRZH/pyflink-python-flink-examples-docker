@@ -28,7 +28,7 @@ To see the payment messages being sent you can run:
 ````
 sudo docker-compose exec kafka kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic baseline_signal
 ````
-To see the elasticsearch data (before the job there should be none) look at [http://localhost:9200/example_pipeline_1/_search?pretty&size=30](http://localhost:9200/example_pipeline_1/_search?pretty&size=30).
+To see the elasticsearch data (before the job there should be none) look at [http://localhost:1236/example_pipeline_summary_1/_search?pretty&size=50](http://localhost:1236/example_pipeline_summary_1/_search?pretty&size=50), [http://localhost:1236/example_pipeline_rfi_run_1/_search?pretty&size=50](http://localhost:1236/example_pipeline_rfi_run_1/_search?pretty&size=50), and [http://localhost:1236/example_pipeline_rfi_current_1/_search?pretty&size=50](http://localhost:1236/example_pipeline_rfi_current_1/_search?pretty&size=50)
 
 Submit the job
 ````commandline
