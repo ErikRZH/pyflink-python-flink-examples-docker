@@ -32,12 +32,12 @@ To see the elasticsearch data (before the job there should be none) look at [htt
 
 Submit the job
 ````commandline
-sudo docker-compose exec jobmanager ./bin/flink run -py /opt/stateful-longest-run/example_run_job.py -d
+sudo docker-compose exec jobmanager ./bin/flink run -py /opt/example-pipeline/example_qa_job.py -d
 ````
 
-** This should not do anything as there are not enough taskslots for the parallelism**
-Launch more task managers to get 5 taskslots at least
-To launch more taskmanagers, so the total is ```<N>```.
+** This should not do anything as there are not enough task slots for the parallelism**
+Launch more task managers to get 5 task slots at least
+To launch more task managers, so the total is ```<N>```.
 
 ```
 sudo docker-compose scale taskmanager=<N>

@@ -22,7 +22,7 @@ services:
     build: .
     image: pyflink/pyflink:1.14.4-scala_2.11
     volumes:
-      - .:/opt/stateful-longest-run
+      - .:/opt/example-pipeline
     hostname: "jobmanager"
     expose:
       - "6123"
@@ -34,7 +34,7 @@ services:
   taskmanager:
     image: pyflink/pyflink:1.14.4-scala_2.11
     volumes:
-    - .:/opt/stateful-longest-run
+    - .:/opt/example-pipeline
     expose:
       - "6121"
       - "6122"

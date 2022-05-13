@@ -23,12 +23,10 @@ from pyflink.datastream import StreamExecutionEnvironment, TimeCharacteristic, F
 from pyflink.datastream.state import ValueStateDescriptor, MapStateDescriptor
 from pyflink.table import StreamTableEnvironment, DataTypes, EnvironmentSettings, Schema, TableDescriptor
 
-from pyflink.datastream.window import TimeWindow, TimeWindowSerializer
 from pyflink.table.window import Tumble
 from pyflink.table.expressions import lit, col
 
 import random
-import datetime
 
 class SpoofRfiFlagger(FlatMapFunction):
     # Class used for identifying the longest consecutive run of integers in a datastream,
@@ -77,6 +75,7 @@ class RfiQaRuns(FlatMapFunction):
             self.run.update(current_run)
         elif seen_flag != current_run[0] and seen_flag == 0: # when RFI ends, record its length and when it ended
             # time = datetime.fromisoformat(seen_time)
+            self.run.update((seen_flag, 0)) # reset the run information
             yield Row(value[1], current_run[1], seen_time) #baselineId, length of RFI, RFI end time
 
 class RfiQaCurrent(FlatMapFunction):
@@ -265,9 +264,12 @@ def qa_processing():
     statement_set.add_insert("es_summary_sink", table_flagged)
     statement_set.add_insert("es_rfi_run_sink",  table_rfi_qa)
     statement_set.add_insert("es_rfi_current_sink", table_rfi_qa_current)
-    # Prints the execution plan which can be visualised here:
+    statement_set.execute()
+
+    # Prints the execution plan for illustrative purposes, remove the -d option to see the output.
+    # The output can be visualised using steps here:
     # https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/dev/execution/execution_plans/
     print(env.get_execution_plan())
-    statement_set.execute()
+
 if __name__ == '__main__':
     qa_processing()
