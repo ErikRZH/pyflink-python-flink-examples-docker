@@ -22,13 +22,13 @@ from pyflink.datastream import StreamExecutionEnvironment, TimeCharacteristic, F
     MapFunction, ProcessWindowFunction, WindowAssigner, Trigger
 from pyflink.datastream.state import ValueStateDescriptor, MapStateDescriptor
 from pyflink.table import StreamTableEnvironment, DataTypes, EnvironmentSettings, Schema, TableDescriptor
-import random
+
 from pyflink.datastream.window import TimeWindow, TimeWindowSerializer
 from pyflink.table.window import Tumble
 from pyflink.table.expressions import lit, col
 
-from typing import Iterable, Tuple
-import statistics
+import random
+import datetime
 
 class SpoofRfiFlagger(FlatMapFunction):
     # Class used for identifying the longest consecutive run of integers in a datastream,
@@ -43,21 +43,43 @@ class SpoofRfiFlagger(FlatMapFunction):
         yield Row(creation_time, baselineId, signalValue, flag)
 
 
-# Window function to work out QA metrics on sliding windows
-# https://nightlies.apache.org/flink/flink-docs-stable/api/java/org/apache/flink/streaming/api/functions/windowing/ProcessWindowFunction.Context.html
-# class SummaryWindowProcessFunction(ProcessWindowFunction[tuple, tuple, int, TimeWindow]):
-#     # Returns Baseline id: INT , mean: FLOAT, max: FLOAT, min: FLOAT, n_elements: INT, n_flags = INT, windows-start time: INT, window-end time: INT
-#     def process(self,
-#                 key: int,
-#                 context: ProcessWindowFunction.Context[TimeWindow],
-#                 elements: Iterable[tuple]) -> Iterable[tuple]:
-#         data_values = [e[2] for e in elements] # Get the part of the input which contain the data
-#         flagger_values = [e[3] for e in elements] # Get the flags
-#
-#         return [(key, statistics.mean(data_values), max(data_values), min(data_values), len(data_values), sum(flagger_values), context.window().start, context.window().end)]
-#
-#     def clear(self, context: ProcessWindowFunction.Context) -> None:
-#         pass
+class RfiQaRuns(FlatMapFunction):
+    # Class used for identifying the longest consecutive run of integers in a datastream,
+    # a single integer does not constitute a run.
+
+    def __init__(self):
+        self.run = None
+
+    def open(self, runtime_context: RuntimeContext):
+        # Useful to consult :
+        # https://nightlies.apache.org/flink/flink-docs-release-1.13/api/python/_modules/pyflink/datastream/state.html
+        # Tuple to store a running tally of the flag and number of flags seen
+        descriptor = ValueStateDescriptor(
+            "flagInt",  # the state name
+            Types.PICKLED_BYTE_ARRAY()  # type information
+        )
+        self.run = runtime_context.get_state(descriptor)
+
+    def flat_map(self, value):
+        # access the state value
+        current_run = self.run.value()  # Access the value of the state stored in self.sum
+        if current_run is None:
+            current_run = (-1, 0)  # Entries correspond to (0) previous entry and (1) number of previous entries in run.
+
+        seen_flag = value[3]
+        seen_time = value[0]
+
+        # if the current flag is positive and the previous was not start recording a rfi
+        if seen_flag != current_run[0] and seen_flag == 1:
+            current_run = (seen_flag, 1)
+            self.run.update(current_run)
+        elif seen_flag == current_run[0] and seen_flag == 1: # current flag and previous flag were positive, increase length by 1
+            current_run = (seen_flag, current_run[1] + 1)
+            self.run.update(current_run)
+        elif seen_flag != current_run[0] and seen_flag == 0: # when RFI ends, record its length and when it ended
+            # time = datetime.fromisoformat(seen_time)
+            yield Row(value[1], current_run[1], seen_time) #baselineId, length of RFI, RFI end time
+
 
 def log_processing():
     env = StreamExecutionEnvironment.get_execution_environment()
@@ -69,8 +91,8 @@ def log_processing():
                                                       "Extended Pipeline: Longest Run of Binary Numbers")
     t_env.get_config().get_configuration().set_boolean("python.fn-execution.memory.managed", True)
     # This is so that no downstream process waits for watermarks which kafka does not provide.
-    # Without this the pipeline fails when parallelism is greater than 4
-    # I am not sure how kafka topic paritions work, but they are apparently used to generate watermarks at the source.
+    # Without this the pipeline fails when parallelism is greater than 4.
+    # I am not sure how kafka topic partitions work, but they are apparently used to generate watermarks at the source.
     t_env.get_config().get_configuration().set_string("table.exec.source.idle-timeout", "1 s")
 
     create_kafka_source_ddl = """
@@ -132,6 +154,24 @@ def log_processing():
                 'format' = 'json'
             )
     """
+    create_es_rfi_run_sink_ddl = """
+            CREATE TABLE es_rfi_run_sink (
+                baselineId INT,
+                nRfiSamples INT, 
+                rfiEndTime TIMESTAMP(3)
+            ) with (
+                'connector' = 'elasticsearch-7',
+                'hosts' = 'http://elasticsearch:9200',
+                'index' = 'example_pipeline_rfi_run_1',
+                'sink.flush-on-checkpoint' = 'true',
+                'document-id.key-delimiter' = '$',
+                'sink.bulk-flush.max-size' = '2gb',
+                'sink.bulk-flush.max-actions' = '320',
+                'sink.bulk-flush.interval' = '1s',
+                'sink.bulk-flush.backoff.delay' = '10s',
+                'format' = 'json'
+            )
+    """
 
     create_print_sink_dll = """    
             CREATE TABLE print (
@@ -152,23 +192,8 @@ def log_processing():
     t_env.execute_sql(create_kafka_source_ddl)
     t_env.execute_sql(create_es_sink_ddl)
     t_env.execute_sql(create_es_summary_sink_ddl)
+    t_env.execute_sql(create_es_rfi_run_sink_ddl)
     t_env.execute_sql(create_print_sink_dll)
-
-    t_env.create_temporary_table(
-        'sink',
-        TableDescriptor.for_connector('print')
-            .schema(Schema.new_builder()
-                    .column("baselineId", DataTypes.INT())
-                    .column("winMean", DataTypes.FLOAT())
-                    .column("winMax", DataTypes.FLOAT())
-                    .column("winMin", DataTypes.FLOAT())
-                    .column("nElements", DataTypes.BIGINT())
-                    .column("nFlags", DataTypes.INT())
-                    .column("windowsStartTime", DataTypes.TIMESTAMP())
-                    .column("windowsEndTime", DataTypes.TIMESTAMP())
-                    .build()
-                    )
-            .build())
 
     # Create Table using the source
     table = t_env.from_path("baseline_signal_source")
@@ -181,7 +206,6 @@ def log_processing():
     ds = ds.key_by(lambda row: row[1])
     # Spoof RFI flagging
     ds_flagged = ds.flat_map(SpoofRfiFlagger(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.FLOAT(), Types.INT()]))
-
 
     # Convert back to Table for Summary Statistics
     # Tumbling QA window, that is that entries appear once.
@@ -205,9 +229,26 @@ def log_processing():
                           table_flagged.signalValue.min, table_flagged.baselineId.count, table_flagged.flagId.sum,
                           col("w").start, col("w").end)
 
-    table_flagged.execute_insert("es_summary_sink")
+    # Datastream RFI flagging function, key by baseline ID
+    ds_rfi_qa = ds_flagged.key_by(lambda row: row[1]) \
+        .flat_map(RfiQaRuns(), output_type=Types.ROW([Types.INT(), Types.INT(), Types.STRING()]))
 
+    table_rfi_qa = t_env.from_data_stream(ds_rfi_qa,
+              Schema.new_builder()
+              .column("f0", DataTypes.INT())
+              .column("f1", DataTypes.INT())
+              .column_by_expression("ts", "CAST(f2 AS TIMESTAMP(3))")
+              .build()
+              ).alias("baselineId, nRfiSamples, RfiEndTime")
+
+    # To have multiple sinks in a job we use statement sets
+    # create a statement set
+    statement_set = t_env.create_statement_set()
+    statement_set.add_insert("es_summary_sink", table_flagged)
+    statement_set.add_insert("es_rfi_run_sink",  table_rfi_qa)
+    # Prints the execution plan which can be visualised here:
+    # https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/dev/execution/execution_plans/
     print(env.get_execution_plan())
-
+    statement_set.execute()
 if __name__ == '__main__':
     log_processing()
