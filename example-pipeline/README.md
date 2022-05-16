@@ -1,18 +1,23 @@
-## Stateful Function using both APIs II
+## Signal Quality Assessment (QA) Pipeline Example
 
-This example uses both API's and a stateful streaming API function. The example records the longest run of consecutive integers from a stream of random integers.
+This example is meant as a prototype to show how a distributed streaming pipeline for quality assessment of radio astronomy signals may be implemented using Flink. This consists of generating simplified signals from baselines (elements of a radio telescope). and then flagging the signal if it contains radio-frequency interference (RFI). Some metrics which may be used to gauge the signal quality and functioning of the fictional radio telescope are calculated from the data. These metrics are written to elasticsearch and can be seen on a Kibana dashboard.
 
-The example consists of:  
-1. Messages with a randomly selected 1 or 0 and a timestamp are generated and sent using kafka.  
-2. Using Flink the longest run seen until this point is calculated, and when it is found it is notes, along with a timestamp and whether it was 0's or 1's.
-3. The processed data is stored using elasticsearch and may be visualised with Kibana. So one can check the distribution of the computed average.
 
-The Flink part of the programme follows the flow:
-* Sink read from Kafka into Table [Table API]
-* Datastream formed from table [Table API, Datastream API]
-* A stateful function is applied to each "Row" of the datastream (corresponding to table rows), this outputs an average integer and the timestamp of the second integer. [Datastream API, Custom stateful function]
-* A Table is formed from the transformed datastream [Datastream API, Table API]
-* Resulting table is written to the Elasticsearch sink. [Table API]
+### Overview of Pipeline
+The pipeline (shown pictorially in ***Fig.1***) consist of the following steps:
+
+1. A stream of mock receive data, consisting of mock visibilities (floats) from spoof baselines is received via Kafka. 
+2. The input stream is split depending on the baseline, this is to allow the QA metric calculation and spoof RFI flagging to be distributed and parallelised for different baselines.
+3. A spoof RFI flagger generates flags for each visibility.
+4. This flagged stream is again split so three different QA Metrics can be calculated independently.
+5. The calculated QA metrics are saved in an Elasticsearch database.
+
+
+
+![alt text](images/pipeline_overview.png)
+***Fig. 1** Overview of the quality assessment pipeline in this example.*
+
+## Running the Job
 
 To start the example, build the images:
 ````commandline
@@ -57,6 +62,12 @@ To shut it down.
 ```
 sudo docker-compose down
 ```
+## When the Job is Running
+[WIP]
+
+Visualising results.
+
+Killing a task manager, seeing it being restored using a checkpoint.
 
 ###Considerations
 If the job suddenly fails as the parallelism increases, a cause may be that some watermarks are not used. Thus parts of the execution halts indefinitely waiting for the unused watermark, this does not throw an error and can be difficult to troubleshoot.
