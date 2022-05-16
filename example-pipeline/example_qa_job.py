@@ -22,7 +22,7 @@ from pyflink.datastream import StreamExecutionEnvironment, TimeCharacteristic, F
     MapFunction, ProcessWindowFunction, WindowAssigner, Trigger
 from pyflink.datastream.state import ValueStateDescriptor, MapStateDescriptor
 from pyflink.table import StreamTableEnvironment, DataTypes, EnvironmentSettings, Schema, TableDescriptor
-
+from pyflink.datastream.checkpointing_mode import CheckpointingMode
 from pyflink.table.window import Tumble
 from pyflink.table.expressions import lit, col
 
@@ -90,6 +90,23 @@ class RfiQaCurrent(FlatMapFunction):
 
 def qa_processing():
     env = StreamExecutionEnvironment.get_execution_environment()
+    # start a checkpoint every 1000 ms
+    env.enable_checkpointing(1000)
+
+    # set mode to exactly-once (this is the default)
+    env.get_checkpoint_config().set_checkpointing_mode(CheckpointingMode.EXACTLY_ONCE)
+
+    # make sure 500 ms of progress happen between checkpoints
+    env.get_checkpoint_config().set_min_pause_between_checkpoints(500)
+
+    # checkpoints have to complete within one minute, or are discarded
+    env.get_checkpoint_config().set_checkpoint_timeout(60000)
+
+    # only two consecutive checkpoint failures are tolerated
+    env.get_checkpoint_config().set_tolerable_checkpoint_failure_number(2)
+
+    # allow only one checkpoint to be in progress at the same time
+    env.get_checkpoint_config().set_max_concurrent_checkpoints(1)
     configuration = Configuration()
     env.set_parallelism(5)
     env.set_restart_strategy(RestartStrategies.fixed_delay_restart(restart_attempts=60, delay_between_attempts=int(2*1e3))) #since delay is in milliseconds
