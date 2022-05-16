@@ -36,7 +36,7 @@ It is possible to [translate between](https://nightlies.apache.org/flink/flink-d
 ## I want my job to run in parallel and quickly* (etc.)!
 For your flink job to execute in parallel there need to be several task slots, this is so Flink can allocate tasks to be performed in parallel to different slots. If the concept of task slots is new to you, I would strongly encourage you to read the short text below.
 
-###Task Managers and Task Slots
+###Task Managers and Task Slots         
 Task Managers, are the worker processes in Flink [[1]](https://learning.oreilly.com/library/view/stream-processing-with/9781491974285/ch03.html#chap-3-setup-components), if you use docker they run in different containers, perhaps with fun names such as *"example-pipeline_taskmanager_16"*. ***Task managers* are managed by the *Job Manager***, which allocates them work. 
 
 Each Task Manager can have one or several Task Slots, each Task Slot can be used to perform some task. The Task Slots in one job manager can perform tasks which are a part of the same job, or different jobs, any tasks the Job manager allocates them. Tasks are run in separate threads within the same Java Virtual Machine (JVM) on the Task Manager. There is therefore less communication overhead for tasks executing in slots on the same Task Manager, but on the flipside a failure in one task can kill the entire Task Manager and all its tasks (the Job Manager takes this into account when assigning work). Furthermore, if a task Manager Crashes the Job Manager will, depending on restart strategy, reallocate those tasks to other available task slots if there are any.
