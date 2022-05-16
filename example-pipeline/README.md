@@ -39,6 +39,7 @@ To see the elasticsearch data for the different QA metrics (before the job there
 [http://localhost:9200/example_pipeline_rfi_current_1/_search?pretty&size=50](http://localhost:9200/example_pipeline_rfi_current_1/_search?pretty&size=50)
 
 Since the Flink container is now running you should see that you have one task manager ([covered here](../FlinkandPyflink.md)) with two task slots and no jobs running. If you open Flink Web UI [http://localhost:8081](http://localhost:8081) it should look as in ***Fig.2***
+
 ![alt text](images/flink_on_start.PNG)
 ***Fig. 2** Flink Web UI on startup.*
 
@@ -63,6 +64,7 @@ The job should now be shown as running in the UI and if you click the job name y
 The Elasticsearch [http://localhost:9200](http://localhost:9200) database should now also contain records, which you can check using the URL's above.
 
 **You can now look at the Kibana Dashboard showing the QA metrics generated**. Going to Kibana [http://localhost:5601](http://localhost:5601), and navigating to **Dashboards in the sidebar** and then selecting the *"Signal Quality Assessment Prototype Dashboard"* should bring up a page showing the live metrics (click refresh to update them), the dashboard should appear as in ***Fig.4***.
+
 ![alt text](images/kibana_dashboard.PNG)
 ***Fig. 4** Kibana Dashboard showing metrics calculated by the Flink job.*
 
@@ -78,11 +80,13 @@ sudo docker-compose down
 ###Testing checkpointing
 To check that the checkpointing and state recovery system works correctly you can kill a taskmanager which is being used and see how Flink deals with this.
 To find a task manager in use, click one of the processes in the UI, either by clicking the blue box, or by selecting its name. Then navigate to the **Task Managers** tab, you should see what task managers execute this process, as in ***Fig. 5***.
+
 ![alt text](images/flink_task_managers.PNG)
 ***Fig. 5** List of task managers in use by this process.*
 In ***Fig. 5*** the task manager ``example-pipeline_taskmanager_4`` is in use, we will see what happens if this stops. 
 
 However first look at the **Checkpoints** tab of the job, this shows all the checkpoints of the state that the job manager keeps (checkpoint strategy is specified in the job). The **Checkpoints**tab should appear as in ***Fig. 6***
+
 ![alt text](images/flink_checkpoints_highlighted.PNG)
 ***Fig. 5** The latest restored checkpoint is highlighted, in this case no error has occurred so the state has not been restored from a checkpoint.*
 
