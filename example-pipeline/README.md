@@ -110,7 +110,7 @@ sudo docker-compose down
 
 ## When the Job is Running
 
-###Testing checkpointing
+### Testing checkpointing
 To check that the checkpointing and state recovery system works correctly you can kill a taskmanager which is being used and see how Flink deals with this.
 To find a task manager in use, click one of the processes in the UI, either by clicking the blue box, or by selecting its name. Then navigate to the **Task Managers** tab, you should see what task managers execute this process, as in ***Fig. 5***.
 
@@ -132,5 +132,5 @@ The job will then predictably fail. When the job manager notices the worker has 
 
 This ability to have ***at least once*** consistency with quick stateful streaming processing, specifying only the job and the job manager taking care of the rest is one of the main appeals of FLik (to the best of my understanding).
 
-###Considerations
+### Considerations
 If the job suddenly fails as the parallelism increases, a cause may be that some watermarks are not used. Thus parts of the execution halts indefinitely waiting for the unused watermark, this does not throw an error and can be difficult to troubleshoot.
