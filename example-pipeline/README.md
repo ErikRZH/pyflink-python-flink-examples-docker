@@ -1,5 +1,5 @@
 ## Signal Quality Assessment Pipeline Example
-For the Square Kilometre Array (SKA) radio telescope, it is important to be able to quickly judge the quality of the signals received from all the baselines. Signal quality assessment (QA) is therefore chosen as an example to illustrate a use case for distributed streaming processing for the SKA.
+For the Square Kilometre Array (SKA) radio telescope, it is important to be able to quickly judge the quality of signals received from the baselines. This is so malfunctions or anomalous behaviour can quickly be identified. Signal quality assessment (QA) is therefore chosen as an example to illustrate a use case for distributed streaming processing for the SKA.
 
 A quality assessment pipeline should convey the signal integrity, as well as the presence of radio-frequency interference (RFI) to a telescope operator. This is accomplished by calculating *QA metrics* based on signal properties and detected RFI, these metrics can then be visualised to quickly inform an operator of the status of the telescope.
 
