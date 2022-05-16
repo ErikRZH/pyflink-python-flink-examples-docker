@@ -1,4 +1,37 @@
-## Signal Quality Assessment (QA) Pipeline Example
+## Signal Quality Assessment Pipeline Example
+For the Square Kilometre Array (SKA) radio telescope, it is important to be able to quickly judge the quality of the signals received from all the baselines. Signal quality assessment (QA) is therefore chosen as an example to illustrate a use case for distributed streaming processing for the SKA.
+
+A quality assessment pipeline should convey the signal integrity, as well as the presence of radio-frequency interference (RFI) to a telescope operator. This is accomplished by calculating *QA metrics* based on signal properties and detected RFI, these metrics can then be visualised to quickly inform an operator of the status of the telescope.
+
+### Reasons for Streaming instead of Batch Processing for QA
+The telescope receives signals as a continuous stream of measurements. Since batch processing inevitably requires a batch to be collected, the results for one batch can not be obtained until the last element has arrived, this then introduces an inherent latency. An increased latency of quality assessment data may have adverse effects, as it means longer before problems can be identified and remedied, reducing the effectiveness of a radio telescope. Stream processing processes records as they arrive which reduces the latency between a record being generated and it affecting a QA metric.
+
+Furthermore, in batch processing the state is usually only preserved per batch of data, so remedying the latency problem with smaller batch sizes can also cause issues. Say for example that batches of 10 seconds are used, if an antenna is constantly experiencing RFI batch processing would only be able to record that it is experiencing continous RFI for 10 seconds, whereas stream processing has no such limitation. 
+
+Related to the point above, the batch size also introduces an upper limit for how much data can be included in aggregate statistics. So if 1 second batches are used, to reduce the latency, then calculating statistics from 15 second time windows is not easily possible, as this relies on the state of 15 batches.
+
+All of these limitations of batch processing for quality assessment connect back to a fundamental insight behind streaming processing: "if data is generated as a stream, introducing batches is artificial". 
+
+## Implementing an Example QA Pipeline with Apache Flink
+
+Apache Flink is a framework for stateful streaming processing with at least once state consistency. It also is high performance, leveraging in memory speeds when working with state. Flink is used by large organisations including: Amazon, Alibaba, Tencent and Ericsson.
+### Apache Flink for streaming
+A Flink deployment consists of two main parts, running in separated containers, a **job manager**, and one or several **task managers**. Each task manager has one or several **task slots**. The job manager allocates work to the task slots of different task managers.
+
+Flink works by that you submit a **Flink job**, this is a high level description of how you want to process a datastream stream. Using python and pyflink you can create a job file. The job specifies what operations should take place on the stream and in what order, as well as the sources and sinks of the stream outside Flink. 
+
+To execute a job you submit it to the **job manager**. When receiving a job the job manager translates the instructions into an execution graph, this can involve "chaining" logically connected parts of a job together, called task chaining. Task chaining is done for performance as "fused tasks exchange records by method calls and thus with basically no communication costs"[1]. Having formed an execution graph the job manager looks at the task managers (workers) and task slots available and maps the execution graph to the task slots in such a way to optimise for performance, for example by putting tasks which communicate heavily on task slots on the same worker, to reduce communication costs. Tasks in slots on the same task manager can exchange data effectively, but tasks in slots on different task managers communicate over slower network protocols.
+
+[Image here]
+
+Task chaining as well as how other job manager optimisations are applied, can be controlled to further improve performance. Such optimisations include slot sharing groups, controlling what tasks should be executed in the same slot.
+
+### QA pipeline as a Flink job
+
+⚠️**Since Flink needs to read data from somewhere and write data somewhere Kafka and Elasticsearch are included to provide a complete example pipeleine. These technologies are not critical to the functioning of the pipeline but merely included for illustrative purposes. The distributed streaming processing is all handled by Flink.** ⚠️
+
+In the job there can be an overall parallelism specified, this is tells the job manager what parallelism all, or parts, of the job should execute with.  In the job you can also specify a checkpointing strategy, how often to back up the state if an error occurs, a restart strategy, how to attempt restarts if a job fails.
+
 
 This example is meant as a prototype to show how a distributed streaming pipeline for quality assessment of radio astronomy signals may be implemented using Flink. This consists of generating simplified signals from baselines (elements of a radio telescope). and then flagging the signal if it contains radio-frequency interference (RFI). Some metrics which may be used to gauge the signal quality and functioning of the fictional radio telescope are calculated from the data. These metrics are written to elasticsearch and can be seen on a Kibana dashboard.
 
