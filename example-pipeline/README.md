@@ -1,12 +1,12 @@
-## Signal Quality Assessment Pipeline Example
+## Signal Quality Assessment Pipeline
 For the Square Kilometre Array (SKA) radio telescope, it is important to be able to quickly judge the quality of signals received from the baselines. This is so malfunctions or anomalous behaviour can quickly be identified. Signal quality assessment (QA) is therefore chosen as an example to illustrate a use case for distributed streaming processing for the SKA.
 
 A quality assessment pipeline should convey the signal integrity, as well as the presence of radio-frequency interference (RFI) to a telescope operator. This is accomplished by calculating *QA metrics* based on signal properties and detected RFI, these metrics can then be visualised to quickly inform an operator of the status of the telescope.
 
 ### Reasons for Streaming instead of Batch Processing for QA
-The telescope receives signals as a continuous stream of measurements. Since batch processing inevitably requires a batch to be collected, the results for one batch can not be obtained until the last element has arrived, this then introduces an inherent latency. An increased latency of quality assessment data may have adverse effects, as it means longer before problems can be identified and remedied, reducing the effectiveness of a radio telescope. Stream processing processes records as they arrive which reduces the latency between a record being generated and it affecting a QA metric.
+The telescope receives signals as a continuous stream of measurements. Since batch processing inevitably requires a batch to be collected, the results for one batch can not be obtained until the last element has arrived, this introduces an inherent latency. An increased latency of quality assessment data may have adverse effects, as it means longer before problems can be identified and remedied, reducing the effectiveness of a radio telescope. Stream processing processes records as they arrive which reduces the latency between a record being generated and it affecting a QA metric.
 
-Furthermore, in batch processing the state is usually only preserved per batch of data, so remedying the latency problem with smaller batch sizes can also cause issues. Say for example that batches of 10 seconds are used, if an antenna is constantly experiencing RFI batch processing would only be able to record that it is experiencing continous RFI for 10 seconds, whereas stream processing has no such limitation. 
+Furthermore, in batch processing the state is usually only preserved per batch of data, so remedying the latency problem outlined above by using smaller batch sizes can cause issues. Say for example that batches of 10 seconds are used, if an antenna is constantly experiencing RFI batch processing would only be able to record that it is experiencing continous RFI for 10 seconds, whereas stream processing has no such limitation. 
 
 Related to the point above, the batch size also introduces an upper limit for how much data can be included in aggregate statistics. So if 1 second batches are used, to reduce the latency, then calculating statistics from 15 second time windows is not easily possible, as this relies on the state of 15 batches.
 
@@ -91,18 +91,16 @@ sudo docker-compose exec jobmanager ./bin/flink run -py /opt/example-pipeline/ex
 The job should now be shown as running in the UI and if you click the job name you will get information regarding the job, as in ***Fig. 3***.
 
 ![alt text](images/flink_running_job.PNG)         
-***Fig. 3** Flink Web UI showing the job*
+***Fig. 3** Flink Web UI showing the job.*
 
-The Elasticsearch [http://localhost:9200](http://localhost:9200) database should now also contain records, which you can check using the URL's above.
+The Elasticsearch [http://localhost:9200](http://localhost:9200) database should now contain records, which you can inspect using the URL's above.
 
 **You can now look at the Kibana Dashboard showing the QA metrics generated**. Going to Kibana [http://localhost:5601](http://localhost:5601), and navigating to **Dashboards in the sidebar** and then selecting the *"Signal Quality Assessment Prototype Dashboard"* should bring up a page showing the live metrics (click refresh to update them), the dashboard should appear as in ***Fig.4***.
 
 ![alt text](images/kibana_dashboard.PNG)       
 ***Fig. 4** Kibana Dashboard showing metrics calculated by the Flink job.*
 
-On Kibana there is a dashboard showing the different QA metrics.
-
-To shut it down.
+To shut down the example.
 ```
 sudo docker-compose down
 ```
