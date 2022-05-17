@@ -14,7 +14,7 @@ All of these limitations of batch processing for quality assessment connect back
 
 ## Implementing an Example QA Pipeline with Apache Flink
 
-Apache Flink is a framework for stateful streaming processing with at least once state consistency. It also is high performance, leveraging in memory speeds when working with state. Flink is used by large organisations including: Amazon, Alibaba, Tencent and Ericsson.
+Apache Flink is a framework for stateful streaming processing with exactly once state consistency. It also is high performance, leveraging in memory speeds when working with state. Flink is used by large organisations including: Amazon, Alibaba, Tencent and Ericsson.
 ### Apache Flink for streaming
 A Flink deployment consists of two main parts, running in separated containers, a **job manager**, and one or several **task managers**. Task managers are the worker processes in Flink. Each task manager has one or several **task slots**. The job manager allocates work to the task slots of different task managers.
 
@@ -129,4 +129,4 @@ sudo docker kill example-pipeline_taskmanager_4
 
 The job will then predictably fail. When the job manager notices the worker has died (so number of workers decreases in the Web UI), it will utilise other task slots and restore the state from a checkpoint, so the "Latest Restore" will update to reflect this, and no data should be lost (can be confirmed by checking the records in Elasticsearch). 
 
-This ability to have ***at least once*** consistency with quick stateful streaming processing, specifying only the job and the job manager taking care of the rest is one of the main appeals of FLik (to the best of my understanding).
+This ability to have ***exactly once*** consistency with quick stateful streaming processing, specifying only the job and the job manager taking care of the rest is one of the main appeals of FLik (to the best of my understanding).
