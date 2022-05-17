@@ -20,9 +20,11 @@ A Flink deployment consists of two main parts, running in separated containers, 
 
 Flink works by that you submit a **Flink job**, this is a high level description of how you want to process a datastream stream. Using python and pyflink you can create a job file. The job specifies what operations should take place on the stream and in what order, as well as the sources and sinks of the stream outside Flink. 
 
-To execute a job you submit it to the **job manager**. When receiving a job the job manager translates the instructions into an execution graph, this can involve "chaining" logically connected parts of a job together, called task chaining. Task chaining is done for performance as "fused tasks exchange records by method calls and thus with basically no communication costs"[1]. Having formed an execution graph the job manager looks at the task managers (workers) and task slots available and maps the execution graph to the task slots in such a way to optimise for performance, for example by putting tasks which communicate heavily on task slots on the same worker, to reduce communication costs. Tasks in slots on the same task manager can exchange data effectively, but tasks in slots on different task managers communicate over slower network protocols.
+To execute a job you submit it to the **job manager**. When receiving a job the job manager translates the instructions into an execution graph, this can involve "chaining" logically connected parts of a job together, called task chaining. Task chaining is done for performance as "fused tasks exchange records by method calls and thus with basically no communication costs"[1]. Having formed an execution graph the job manager looks at the task managers (workers) and task slots available and maps the execution graph to the task slots in such a way to optimise for performance, for example by putting tasks which communicate heavily on task slots on the same worker, to reduce communication costs. Tasks in slots on the same task manager can exchange data effectively, but tasks in slots on different task managers communicate over slower network protocols. The process of job creation, execution graph creation and task chaining, and mapping to cluster resources is shown in ***Fig. 0***.
 
-[Image here]
+![alt text](images/flink_job_process.png)
+***Fig. 0** How a Flink job is transformed into an execution graph and then mapped to available task slots.*
+
 
 Task chaining as well as how other job manager optimisations are applied, can be controlled to further improve performance. Such optimisations include slot sharing groups, controlling what tasks should be executed in the same slot.
 
@@ -123,7 +125,7 @@ However first look at the **Checkpoints** tab of the job, this shows all the che
 ![alt text](images/flink_checkpoints_highlighted.PNG)
 ***Fig. 5** The latest restored checkpoint is highlighted, in this case no error has occurred so the state has not been restored from a checkpoint.*
 
-If you then kill ``example-pipeline_taskmanager_4`` using:
+If you kill ``example-pipeline_taskmanager_4`` using:
 ```
 sudo docker kill example-pipeline_taskmanager_4
 ```
@@ -131,6 +133,3 @@ sudo docker kill example-pipeline_taskmanager_4
 The job will then predictably fail. When the job manager notices the worker has died (so number of workers decreases in the Web UI), it will utilise other task slots and restore the state from a checkpoint, so the "Latest Restore" will update to reflect this, and no data should be lost (can be confirmed by checking the records in Elasticsearch). 
 
 This ability to have ***at least once*** consistency with quick stateful streaming processing, specifying only the job and the job manager taking care of the rest is one of the main appeals of FLik (to the best of my understanding).
-
-### Considerations
-If the job suddenly fails as the parallelism increases, a cause may be that some watermarks are not used. Thus parts of the execution halts indefinitely waiting for the unused watermark, this does not throw an error and can be difficult to troubleshoot.
