@@ -117,7 +117,7 @@ To find a task manager in use, click one of the processes in the UI, either by c
 ***Fig. 6** List of task managers in use by this process.*
 In ***Fig. 6*** the task manager ``example-pipeline_taskmanager_4`` is in use, we will see what happens if this stops. 
 
-However first look at the **Checkpoints** tab of the job, this shows all the checkpoints of the state that the job manager keeps (checkpoint strategy is specified in the job). The **Checkpoints**tab should appear as in ***Fig. 7***
+However first look at the **Checkpoints** tab of the job, this shows all the checkpoints of the state that the job manager keeps (checkpoint strategy is specified in the job). The **Checkpoints** tab should appear as in ***Fig. 7***
 
 ![alt text](images/flink_checkpoints_highlighted.PNG)         
 ***Fig. 7** The latest restored checkpoint is highlighted, in this case no error has occurred so the state has not been restored from a checkpoint.*
