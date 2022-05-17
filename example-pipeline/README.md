@@ -20,32 +20,29 @@ A Flink deployment consists of two main parts, running in separated containers, 
 
 Flink works by that you submit a **Flink job**, this is a high level description of how you want to process a datastream stream. Using python and pyflink you can create a job file. The job specifies what operations should take place on the stream and in what order, as well as the sources and sinks of the stream outside Flink. 
 
-To execute a job you submit it to the **job manager**. When receiving a job the job manager translates the instructions into an execution graph, this can involve "chaining" logically connected parts of a job together, called task chaining. Task chaining is done for performance as "fused tasks exchange records by method calls and thus with basically no communication costs"[1]. Having formed an execution graph the job manager looks at the task managers (workers) and task slots available and maps the execution graph to the task slots in such a way to optimise for performance, for example by putting tasks which communicate heavily on task slots on the same worker, to reduce communication costs. Tasks in slots on the same task manager can exchange data effectively, but tasks in slots on different task managers communicate over slower network protocols. The process of job creation, execution graph creation and task chaining, and mapping to cluster resources is shown in ***Fig. 0***.
+To execute a job you submit it to the **job manager**. When receiving a job the job manager translates the instructions into an execution graph, this can involve "chaining" logically connected parts of a job together, called task chaining. Task chaining is done for performance as "fused tasks exchange records by method calls and thus with basically no communication costs"[1]. Having formed an execution graph the job manager looks at the task managers (workers) and task slots available and maps the execution graph to the task slots in such a way to optimise for performance, for example by putting tasks which communicate heavily on task slots on the same worker, to reduce communication costs. Tasks in slots on the same task manager can exchange data effectively, but tasks in slots on different task managers communicate over slower network protocols. The process of job creation, execution graph creation and task chaining, then mapping to cluster resources for a job consisting of processes **A**,**B**,**C**,**D**,**E** is shown in ***Fig. 0***.
 
 ![alt text](images/flink_job_process.png)
 ***Fig. 0** How a Flink job is transformed into an execution graph and then mapped to available task slots.*
 
 
 Task chaining as well as how other job manager optimisations are applied, can be controlled to further improve performance. Such optimisations include slot sharing groups, controlling what tasks should be executed in the same slot.
-
+In the job there can be an overall parallelism specified, this is tells the job manager what parallelism all, or parts, of the job should execute with.  In the job you can also specify a checkpointing strategy, how often to back up the state if an error occurs, a restart strategy, how to attempt restarts if a job fails.
 ### QA pipeline as a Flink job
 
 ⚠️**Since Flink needs to read data from somewhere and write data somewhere Kafka and Elasticsearch are included to provide a complete example pipeleine. These technologies are not critical to the functioning of the pipeline but merely included for illustrative purposes. The distributed streaming processing is all handled by Flink.** ⚠️
 
-In the job there can be an overall parallelism specified, this is tells the job manager what parallelism all, or parts, of the job should execute with.  In the job you can also specify a checkpointing strategy, how often to back up the state if an error occurs, a restart strategy, how to attempt restarts if a job fails.
-
-
-This example is meant as a prototype to show how a distributed streaming pipeline for quality assessment of radio astronomy signals may be implemented using Flink. This consists of generating simplified signals from baselines (elements of a radio telescope). and then flagging the signal if it contains radio-frequency interference (RFI). Some metrics which may be used to gauge the signal quality and functioning of the fictional radio telescope are calculated from the data. These metrics are written to elasticsearch and can be seen on a Kibana dashboard.
+This is a prototype to show how a distributed streaming pipeline for quality assessment of radio astronomy signals may be implemented using Flink. This consists processing simplified signals from baselines (elements of a radio telescope). and then flagging the signal if it contains radio-frequency interference (RFI). Some metrics which may be used to gauge the signal quality and functioning of the fictional radio telescope are calculated from the data. For purely illustrative purposes which does not affect the actual streaming processing the calculated QA metrics are written to elasticsearch and can be seen on a Kibana dashboard.
 
 
 ### Overview of Pipeline
-The pipeline (shown pictorially in ***Fig.1***) consist of the following steps:
+The pipeline (shown pictorially in ***Fig.1***) implemented as a Flink job consist of the following steps:
 
-1. A stream of mock receive data, consisting of mock visibilities (floats) from spoof baselines is received via Kafka. 
-2. The input stream is split depending on the baseline, this is to allow the QA metric calculation and spoof RFI flagging to be distributed and parallelised for different baselines.
+1. A stream of mock receive data, consisting of mock visibilities (floats) from spoof baselines is received. 
+2. The input stream is split depending on the baseline, this is to allow the QA metric calculation and spoof RFI flagging for different baselines to be distributed and parallelised.
 3. A spoof RFI flagger generates flags for each visibility.
 4. This flagged stream is again split so three different QA Metrics can be calculated independently.
-5. The calculated QA metrics are saved in an Elasticsearch database.
+5. The calculated QA metrics are outputted.
 
 
 
