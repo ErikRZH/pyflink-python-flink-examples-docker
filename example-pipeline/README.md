@@ -22,7 +22,7 @@ Flink works by that you submit a **Flink job**, this is a high level description
 
 To execute a job you submit it to the **job manager**. When receiving a job the job manager translates the instructions into an execution graph, this can involve "chaining" logically connected parts of a job together, called task chaining. Task chaining is done for performance as "fused tasks exchange records by method calls and thus with basically no communication costs"[1]. Having formed an execution graph the job manager looks at the task managers (workers) and task slots available and maps the execution graph to the task slots in such a way to optimise for performance, for example by putting tasks which communicate heavily on task slots on the same worker, to reduce communication costs. Tasks in slots on the same task manager can exchange data effectively, but tasks in slots on different task managers communicate over slower network protocols. 
 
-For a job consisting of processes **A**,**B**,**C**,**D**,**E** with specified parallelisms, the process of: job creation, execution graph creation and task chaining, then mapping to cluster resources is shown in ***Fig. 1***.
+For a job consisting of processes **A**,**B**,**C**,**D**,**E** with specified parallelisms, the process of: specifying a job, execution graph creation and task chaining, then mapping to cluster resources is shown in ***Fig. 1***.
 
 ![alt text](images/flink_job_process.png)       
 ***Fig. 1** How a Flink job is transformed into an execution graph and then mapped to available task slots.*
