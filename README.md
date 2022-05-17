@@ -10,7 +10,7 @@ This version uses **Flink 1.14** be aware that some functionality may differ bet
 [(1)](wordcount) The [standard](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/dev/python/table_api_tutorial/) wordcount example for streaming and batch using both the datastream and table APIs in a docker container.   
 **[Table API, Datastream API]**
 
-[(2)](modified-playground) A version of the playground from [here](https://github.com/pyflink/playgrounds) with modifications to support Flink 14.4, as well as minor cosmetic changes.  
+[(2)](modified-playground) A version of the playground from [here](https://github.com/apache/flink-playgrounds/tree/master/pyflink-walkthrough) with modifications to support Flink 14.4, as well as minor cosmetic changes.  
 **[Table API, UDF, Kafka, Elasticsearch, Kibana]**
 
 [(3)](stateful-pair-avg) Example of combining the table and datastream API's to implement the keyed state function from [here](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/dev/datastream/fault-tolerance/state/) is included.    
