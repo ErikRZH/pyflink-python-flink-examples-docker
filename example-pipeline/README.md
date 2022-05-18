@@ -53,6 +53,19 @@ The pipeline (shown pictorially in ***Fig. 2***) implemented as a Flink job cons
 
 ## Running the Job
 
+###Installing Docker
+**Since the example is containerised and relies on docker-compose you need to have the docker engine and docker compose installed.**
+The instructions [here](https://docs.docker.com/engine/install/) show how to install docker. On Linux you can use the following commands to install what you need:
+```
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+```
+Run the following command to verify that docker is installed.
+```
+sudo docker run hello-world
+```
+
+### With Docker Installed
 To start the example, build the images:
 ````commandline
 sudo docker-compose build
