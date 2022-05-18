@@ -6,7 +6,7 @@ While examples and documentation for using pyflink with docker may be found [her
 This repository is intended to provide such further examples, **the repository makes no claim to represent best Pyflink practices**.
 
 ## Examples
-[(1)](example-pipeline) Largest example using both API's and a variety of operations. Implements a simple prototype of a pipeline for quality assessment of a raio telescope data.        
+[(1)](example-pipeline) Large example using both API's and a variety of operations. Implements a simple prototype of a pipeline for quality assessment of a raio telescope data.        
 **[Table API, Datastream API, Stateful Function, Kafka, Elasticsearch, Kibana]**
 
 [(2)](wordcount) The [standard](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/dev/python/table_api_tutorial/) wordcount example for streaming and batch using both the datastream and table APIs in a docker container.   
