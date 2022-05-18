@@ -30,7 +30,7 @@ sudo docker-compose exec kafka kafka-console-consumer.sh --bootstrap-server kafk
 ````
 To see the elasticsearch data (before the job there should be none) look at [http://localhost:9200/platform_run_2/_search?pretty&size=30](http://localhost:9200/platform_run_2/_search?pretty&size=30).
 
-Submit the payment processing job
+Submit the job
 ````commandline
 sudo docker-compose exec jobmanager ./bin/flink run -py /opt/stateful-longest-run/demo_longest_run.py -d
 ````
@@ -40,7 +40,7 @@ Flink Web UI [http://localhost:8081](http://localhost:8081).
 Elasticsearch [http://localhost:9200](http://localhost:9200).   
 Kibana [http://localhost:5601](http://localhost:5601).
 
-On Kibana there is a dashboard showing the spending of the different teams.
+On Kibana there is a dashboard showing the longest run of consecutive integers and when it occurs.
 
 To shut it down.
 ```
