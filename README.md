@@ -7,7 +7,7 @@ This repository is intended to provide such further examples, **the repository m
 
 This version uses **Flink 1.14** be aware that some functionality may differ between versions.
 ## Examples
-[(1)](example-pipeline) A simple prototype streaming pipeline for quality assessment of a raio telescope data. Large example using both API's and a variety of Flink streaming operations.       
+[(1)](example-pipeline) A simple prototype streaming pipeline for quality assessment of radio telescope data. Large example using both API's and a variety of Flink streaming operations.       
 **[Table API, Datastream API, Stateful Function, Kafka, Elasticsearch, Kibana]**
 
 [(2)](wordcount) The [standard](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/dev/python/table_api_tutorial/) wordcount example for streaming and batch using both the datastream and table APIs in a docker container.   
