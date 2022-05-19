@@ -143,3 +143,10 @@ sudo docker kill example-pipeline_taskmanager_4
 The job will then predictably fail. When the job manager notices the worker has died (so number of workers decreases in the Web UI), it will utilise other task slots and restore the state from a checkpoint, so the "Latest Restore" will update to reflect this, and no data should be lost (can be confirmed by checking the records in Elasticsearch). 
 
 This ability to have ***exactly once*** consistency with quick stateful streaming processing, specifying only the job and the job manager taking care of the rest is one of the main appeals of FLik (to the best of my understanding).
+
+## Stopping the example
+To shut down the example.
+```
+sudo docker-compose down
+```
+
