@@ -15,18 +15,17 @@
 #  See the License for the specific language governing permissions and
 # limitations under the License.
 ################################################################################
-from pyflink.common import WatermarkStrategy, Row, Time, Configuration
+import random
+
+from pyflink.common import Row, Configuration
 from pyflink.common.typeinfo import Types
 from pyflink.common.restart_strategy import RestartStrategies
-from pyflink.datastream import StreamExecutionEnvironment, TimeCharacteristic, FlatMapFunction, RuntimeContext, \
-    MapFunction, ProcessWindowFunction, WindowAssigner, Trigger
-from pyflink.datastream.state import ValueStateDescriptor, MapStateDescriptor
-from pyflink.table import StreamTableEnvironment, DataTypes, EnvironmentSettings, Schema, TableDescriptor
+from pyflink.datastream import StreamExecutionEnvironment, FlatMapFunction, RuntimeContext
+from pyflink.datastream.state import ValueStateDescriptor
+from pyflink.table import StreamTableEnvironment, DataTypes, Schema
 from pyflink.datastream.checkpointing_mode import CheckpointingMode
 from pyflink.table.window import Tumble
 from pyflink.table.expressions import lit, col
-
-import random
 
 class SpoofRfiFlagger(FlatMapFunction):
     # Class used for identifying the longest consecutive run of integers in a datastream,
@@ -37,7 +36,6 @@ class SpoofRfiFlagger(FlatMapFunction):
         creation_time = value[0]
         baselineId = value[1]
         signalValue = value[2]
-
         yield Row(creation_time, baselineId, signalValue, flag)
 
 class RfiQaRuns(FlatMapFunction):
@@ -61,8 +59,7 @@ class RfiQaRuns(FlatMapFunction):
         # access the state value
         current_run = self.run.value()  # Access the value of the state stored in self.sum
         if current_run is None:
-            current_run = (-1, 0)  # Entries correspond to (0) previous entry and (1) number of previous entries in run.
-
+            current_run = (-1, 0)   # Fields: 0: previous entry, 1: number of previous entries in run.
         seen_flag = value[3]
         seen_time = value[0]
 
@@ -70,13 +67,12 @@ class RfiQaRuns(FlatMapFunction):
         if seen_flag != current_run[0] and seen_flag == 1:
             current_run = (seen_flag, 1)
             self.run.update(current_run)
-        elif seen_flag == current_run[0] and seen_flag == 1: # current flag and previous flag were positive, increase length by 1
+        elif seen_flag == current_run[0] and seen_flag == 1: # current and previous flag are positive, add 1 to length
             current_run = (seen_flag, current_run[1] + 1)
             self.run.update(current_run)
         elif seen_flag != current_run[0] and seen_flag == 0: # when RFI ends, record its length and when it ended
-            # time = datetime.fromisoformat(seen_time)
-            self.run.update((seen_flag, 0)) # reset the run information
-            yield Row(value[1], current_run[1], seen_time) #baselineId, length of RFI, RFI end time
+            self.run.update((seen_flag, 0)) # reset run information
+            yield Row(value[1], current_run[1], seen_time) # baselineId, length of RFI, RFI end time
 
 class RfiQaCurrent(FlatMapFunction):
     # Class used for identifying the longest consecutive run of integers in a datastream,
@@ -107,9 +103,9 @@ def qa_processing():
 
     # allow only one checkpoint to be in progress at the same time
     env.get_checkpoint_config().set_max_concurrent_checkpoints(1)
-    configuration = Configuration()
     env.set_parallelism(5)
-    env.set_restart_strategy(RestartStrategies.fixed_delay_restart(restart_attempts=60, delay_between_attempts=int(2*1e3))) #since delay is in milliseconds
+    env.set_restart_strategy(RestartStrategies.fixed_delay_restart(restart_attempts=60,
+                                                                   delay_between_attempts=int(2*1e3))) #delay is in ms
     t_env = StreamTableEnvironment.create(stream_execution_environment=env)
     t_env.get_config().get_configuration().set_string("pipeline.name",
                                                       "Prototype QA Metric Generation: Spoof Receive")
@@ -228,7 +224,8 @@ def qa_processing():
     # Key the streams by the baselineId
     ds = ds.key_by(lambda row: row[1])
     # Spoof RFI flagging
-    ds_flagged = ds.flat_map(SpoofRfiFlagger(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.FLOAT(), Types.INT()]))
+    ds_flagged = ds.flat_map(SpoofRfiFlagger(), output_type=Types.ROW([Types.STRING(), Types.INT(), Types.FLOAT(),
+                                                                       Types.INT()]))
 
     # Convert back to Table for Summary Statistics
     # Tumbling QA window, that is that entries appear once.
@@ -245,7 +242,7 @@ def qa_processing():
     # Write to sink
 
     # Groups the rows based on timestamps within 15 seconds of one another, stores the window reference in a "column" w
-    # Using expressions from https://nightlies.apache.org/flink/flink-docs-stable/api/python/_modules/pyflink/table/expression.html
+    # From https://nightlies.apache.org/flink/flink-docs-stable/api/python/_modules/pyflink/table/expression.html
     table_flagged = table_flagged.window(Tumble.over(lit(15).seconds).on(col("ts")).alias("w")) \
                   .group_by(table_flagged.baselineId, col('w')) \
                   .select(table_flagged.baselineId, table_flagged.signalValue.avg, table_flagged.signalValue.max,
