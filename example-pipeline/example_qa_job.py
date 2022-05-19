@@ -27,16 +27,17 @@ from pyflink.datastream.checkpointing_mode import CheckpointingMode
 from pyflink.table.window import Tumble
 from pyflink.table.expressions import lit, col
 
+
 class SpoofRfiFlagger(FlatMapFunction):
     # Class used for identifying the longest consecutive run of integers in a datastream,
     # a single integer does not constitute a run.
     def flat_map(self, value):
-
         flag = random.randint(0, 1)
         creation_time = value[0]
         baselineId = value[1]
         signalValue = value[2]
         yield Row(creation_time, baselineId, signalValue, flag)
+
 
 class RfiQaRuns(FlatMapFunction):
     # Class used for identifying the longest consecutive run of integers in a datastream,
@@ -59,7 +60,7 @@ class RfiQaRuns(FlatMapFunction):
         # access the state value
         current_run = self.run.value()  # Access the value of the state stored in self.sum
         if current_run is None:
-            current_run = (-1, 0)   # Fields: 0: previous entry, 1: number of previous entries in run.
+            current_run = (-1, 0)  # Fields: 0: previous entry, 1: number of previous entries in run.
         seen_flag = value[3]
         seen_time = value[0]
 
@@ -67,22 +68,23 @@ class RfiQaRuns(FlatMapFunction):
         if seen_flag != current_run[0] and seen_flag == 1:
             current_run = (seen_flag, 1)
             self.run.update(current_run)
-        elif seen_flag == current_run[0] and seen_flag == 1: # current and previous flag are positive, add 1 to length
+        elif seen_flag == current_run[0] and seen_flag == 1:  # current and previous flag are positive, add 1 to length
             current_run = (seen_flag, current_run[1] + 1)
             self.run.update(current_run)
-        elif seen_flag != current_run[0] and seen_flag == 0: # when RFI ends, record its length and when it ended
-            self.run.update((seen_flag, 0)) # reset run information
-            yield Row(value[1], current_run[1], seen_time) # baselineId, length of RFI, RFI end time
+        elif seen_flag != current_run[0] and seen_flag == 0:  # when RFI ends, record its length and when it ended
+            self.run.update((seen_flag, 0))  # reset run information
+            yield Row(value[1], current_run[1], seen_time)  # baselineId, length of RFI, RFI end time
+
 
 class RfiQaCurrent(FlatMapFunction):
     # Class used for identifying the longest consecutive run of integers in a datastream,
     # a single integer does not constitute a run.
     def flat_map(self, value):
-
         flag = value[3]
         baselineId = value[1]
 
         yield Row(baselineId, flag)
+
 
 def qa_processing():
     env = StreamExecutionEnvironment.get_execution_environment()
@@ -105,7 +107,7 @@ def qa_processing():
     env.get_checkpoint_config().set_max_concurrent_checkpoints(1)
     env.set_parallelism(5)
     env.set_restart_strategy(RestartStrategies.fixed_delay_restart(restart_attempts=60,
-                                                                   delay_between_attempts=int(2*1e3))) #delay is in ms
+                                                                   delay_between_attempts=int(2 * 1e3)))  # delay in ms
     t_env = StreamTableEnvironment.create(stream_execution_environment=env)
     t_env.get_config().get_configuration().set_string("pipeline.name",
                                                       "Prototype QA Metric Generation: Spoof Receive")
@@ -231,52 +233,52 @@ def qa_processing():
     # Tumbling QA window, that is that entries appear once.
     # Convert Datastream back to table
     table_flagged = t_env.from_data_stream(ds_flagged,
-        Schema.new_builder()
-              .column_by_expression("ts", "CAST(f0 AS TIMESTAMP(3))")
-              .column("f1", DataTypes.INT())
-              .column("f2", DataTypes.FLOAT())
-              .column("f3", DataTypes.INT())
-              .watermark("ts", "ts - INTERVAL '3' SECOND")
-              .build()
-    ).alias("ts, baselineId, signalValue, flagId")
+                                           Schema.new_builder()
+                                           .column_by_expression("ts", "CAST(f0 AS TIMESTAMP(3))")
+                                           .column("f1", DataTypes.INT())
+                                           .column("f2", DataTypes.FLOAT())
+                                           .column("f3", DataTypes.INT())
+                                           .watermark("ts", "ts - INTERVAL '3' SECOND")
+                                           .build()
+                                           ).alias("ts, baselineId, signalValue, flagId")
     # Write to sink
 
     # Groups the rows based on timestamps within 15 seconds of one another, stores the window reference in a "column" w
     # From https://nightlies.apache.org/flink/flink-docs-stable/api/python/_modules/pyflink/table/expression.html
     table_flagged = table_flagged.window(Tumble.over(lit(15).seconds).on(col("ts")).alias("w")) \
-                  .group_by(table_flagged.baselineId, col('w')) \
-                  .select(table_flagged.baselineId, table_flagged.signalValue.avg, table_flagged.signalValue.max,
-                          table_flagged.signalValue.min, table_flagged.baselineId.count, table_flagged.flagId.sum,
-                          col("w").start, col("w").end)
+        .group_by(table_flagged.baselineId, col('w')) \
+        .select(table_flagged.baselineId, table_flagged.signalValue.avg, table_flagged.signalValue.max,
+                table_flagged.signalValue.min, table_flagged.baselineId.count, table_flagged.flagId.sum,
+                col("w").start, col("w").end)
 
     # Datastream RFI flagging function, key by baseline ID
     ds_rfi_qa = ds_flagged.key_by(lambda row: row[1]) \
         .flat_map(RfiQaRuns(), output_type=Types.ROW([Types.INT(), Types.INT(), Types.STRING()]))
 
     table_rfi_qa = t_env.from_data_stream(ds_rfi_qa,
-              Schema.new_builder()
-              .column("f0", DataTypes.INT())
-              .column("f1", DataTypes.INT())
-              .column_by_expression("ts", "CAST(f2 AS TIMESTAMP(3))")
-              .build()
-              ).alias("baselineId, nRfiSamples, RfiEndTime")
+                                          Schema.new_builder()
+                                          .column("f0", DataTypes.INT())
+                                          .column("f1", DataTypes.INT())
+                                          .column_by_expression("ts", "CAST(f2 AS TIMESTAMP(3))")
+                                          .build()
+                                          ).alias("baselineId, nRfiSamples, RfiEndTime")
 
     # Datastream which records the current flag in the baseline
     ds_rfi_qa_current = ds_flagged.key_by(lambda row: row[1]) \
         .flat_map(RfiQaCurrent(), output_type=Types.ROW([Types.INT(), Types.INT()]))
     # Convert the datastream to a table so it can be written using table sinks.
     table_rfi_qa_current = t_env.from_data_stream(ds_rfi_qa_current,
-              Schema.new_builder()
-              .column("f0", DataTypes.INT())
-              .column("f1", DataTypes.INT())
-              .build()
-              ).alias("baselineId, nRfiFlag")
+                                                  Schema.new_builder()
+                                                  .column("f0", DataTypes.INT())
+                                                  .column("f1", DataTypes.INT())
+                                                  .build()
+                                                  ).alias("baselineId, nRfiFlag")
 
     # To have multiple sinks in a job we use statement sets
     # create a statement set
     statement_set = t_env.create_statement_set()
     statement_set.add_insert("es_summary_sink", table_flagged)
-    statement_set.add_insert("es_rfi_run_sink",  table_rfi_qa)
+    statement_set.add_insert("es_rfi_run_sink", table_rfi_qa)
     statement_set.add_insert("es_rfi_current_sink", table_rfi_qa_current)
     statement_set.execute()
 
@@ -284,6 +286,7 @@ def qa_processing():
     # The output can be visualised using steps here:
     # https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/dev/execution/execution_plans/
     print(env.get_execution_plan())
+
 
 if __name__ == '__main__':
     qa_processing()
