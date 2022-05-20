@@ -14,7 +14,7 @@ All of these limitations of batch processing for quality assessment connect back
 
 ## Implementing an Example QA Pipeline with Apache Flink
 
-Apache Flink is a framework for stateful streaming processing with exactly once state consistency. It also is high performance, leveraging in memory speeds when working with state. Flink is used by large organisations including: Amazon, Alibaba, Tencent and Ericsson.
+Apache Flink is a framework for stateful streaming processing with exactly once state consistency. It achieves high performance by leveraging in memory speeds when working with state. Flink is used by large organisations including: Amazon, Alibaba, Tencent and Ericsson.
 ### Apache Flink for streaming
 A Flink deployment consists of two main parts, running in separated containers, a **job manager**, and one or several **task managers**. Task managers are the worker processes in Flink. Each task manager has one or several **task slots**. The job manager allocates work to the task slots of different task managers.
 
