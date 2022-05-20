@@ -52,7 +52,12 @@ The pipeline (shown pictorially in ***Fig. 2***) implemented as a Flink job cons
 ***Fig. 2** Overview of the quality assessment pipeline in this example.*
 
 ## Running the Job
-
+**If you are running this example remotely using ssh you may need to forward ports to see the web UI's from your local browser**. For a remote machine named: `<remote machine>` this may be done using:
+```
+ ssh -L 1234:localhost:8081 -L 1235:localhost:5601 -L 1236:localhost:9200 <remote machine>
+```
+Then modify the port numbers appropriately when accessing the web UI's. So Flink web UI would then be on port 1234, Kibana on 1235 and Elasticsearch on 1236.
+### With Docker Installed
 ### Installing Docker
 **Since the example is containerised and relies on docker-compose you need to have the docker engine and docker compose installed.**
 The instructions [here](https://docs.docker.com/engine/install/) show how to install docker. On Linux you can use the following commands to install what you need:
@@ -64,8 +69,6 @@ Run the following command to verify that docker is installed.
 ```
 sudo docker run hello-world
 ```
-
-### With Docker Installed
 To start the example, build the images:
 ````commandline
 sudo docker-compose build
@@ -115,11 +118,10 @@ The Elasticsearch [http://localhost:9200](http://localhost:9200) database should
 ![alt text](images/kibana_dashboard.PNG)       
 ***Fig. 5** Kibana Dashboard showing metrics calculated by the Flink job.*
 
-To shut down the example.
+To shut down the example use.
 ```
 sudo docker-compose down
 ```
-
 ## When the Job is Running
 
 ### Testing checkpointing
