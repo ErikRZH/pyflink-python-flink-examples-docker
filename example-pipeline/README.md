@@ -32,7 +32,7 @@ Task chaining as well as how other job manager optimisations are applied, can be
 In the job there can be an overall parallelism specified, this is tells the job manager what parallelism all, or parts, of the job should execute with.  In the job you can also specify a checkpointing strategy: how often to back up the state if an error occurs, and a restart strategy: how to attempt restarts if a job fails.
 ### QA pipeline as a Flink job
 
-⚠️**Since Flink needs to read data from somewhere and write data somewhere Kafka and Elasticsearch are included to provide a complete example pipeleine. These technologies are not critical to the functioning of the pipeline but merely included for illustrative purposes. The distributed streaming processing is all handled by Flink.** ⚠️
+⚠️**Since Flink needs to read data from somewhere and write data somewhere Kafka and Elasticsearch are included to provide a complete example pipeline. These technologies are not critical to the functioning of the pipeline but merely included for illustrative purposes. The distributed streaming processing is all handled by Flink.** ⚠️
 
 This is a prototype to show how a distributed streaming pipeline for quality assessment of radio astronomy signals may be implemented using Flink. This consists processing simplified signals from baselines (elements of a radio telescope), and flagging the signal if it contains radio-frequency interference (RFI). Some metrics which may be used to gauge the signal quality and functioning of the fictional radio telescope are calculated from the data. For purely illustrative purposes which does not affect the actual streaming processing the calculated QA metrics are written to elasticsearch and can be seen on a Kibana dashboard.
 
