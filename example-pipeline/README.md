@@ -79,7 +79,7 @@ Then start the containers
 sudo docker-compose up -d
 ````
 
-To see the payment messages being sent you can run:
+To see the spoof "recieved data" being sent you can run:
 ````
 sudo docker-compose exec kafka kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic baseline_signal
 ````
