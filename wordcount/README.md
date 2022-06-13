@@ -12,7 +12,7 @@ docker-compose (add sudo according to your preferences).
 sudo docker-compose up -d
 ````
 
-To the examples correspond to using the Table API in batch (``wordcount_table_batch.py``) and stream modes (``wordcount_table_streamin.py``), as well as the same for the Datastream API (``wordcount_´ds_batch.py``, ``wordcount_ds_streaming.py``).
+The examples correspond to using the Table API in batch (``wordcount_table_batch.py``) and stream modes (``wordcount_table_streamin.py``), as well as the same for the Datastream API (``wordcount_´ds_batch.py``, ``wordcount_ds_streaming.py``).
 
 To run these jobs use 
 ````
