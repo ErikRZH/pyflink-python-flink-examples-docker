@@ -1,5 +1,5 @@
 ## Wordcount examples
-This is the example from [here](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/dev/python/table_api_tutorial/) and [here](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/dev/python/datastream_tutorial/) respectively running in docker container.
+This contains the example from [here](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/dev/python/table_api_tutorial/) and [here](https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/dev/python/datastream_tutorial/) respectively, running in a docker container.
 
 First build the pyflink image
 ```
