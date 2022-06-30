@@ -152,3 +152,5 @@ To shut down the example.
 sudo docker-compose down
 ```
 
+# Multi-node deployment
+Multi-node Flink deployments are possible. The process for how to do this is described in [Multi-node_Intsructions.md](Multi-node_Intsructions.md). This document walks through the process of running this pipeline on distributed across multiple nodes step by step.
