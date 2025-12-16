@@ -65,7 +65,7 @@ Swarm is not able to build images, therefore the images must be build and stored
 ```
 sudo docker service create --name registry --publish published=5000,target=5000 registry:2
 ```
-Check that the registry is running usingÄ
+Check that the registry is running using
 ```
 sudo docker service ls
 ```
